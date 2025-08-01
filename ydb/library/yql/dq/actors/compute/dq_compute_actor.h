@@ -287,6 +287,11 @@ struct TGuaranteeQuotaManager : public IMemoryQuotaManager {
         Y_ABORT_UNLESS(Limit >= Quota);
         Y_ABORT_UNLESS((Step ^ ~Step) + 1 == 0);
         MaxMemorySize = Limit;
+
+        TStringBuilder logmsg;
+        logmsg << "Initial MaxMemorySize: " << MaxMemorySize << '\n';
+        std::cerr << logmsg;
+        std::cerr.flush();
     }
 
     bool AllocateQuota(ui64 memorySize) override {
@@ -302,6 +307,10 @@ struct TGuaranteeQuotaManager : public IMemoryQuotaManager {
             Limit += delta;
             if (MaxMemorySize < Limit) {
                 MaxMemorySize = Limit;
+
+                if (auto& guid = NKikimr::NMiniKQL::TlsAllocState->OperatorGuid; guid) {
+                    NKikimr::NMiniKQL::TlsAllocState->OperatorsMaxMemoryUsages[guid.GetRef()] = MaxMemorySize;
+                }
             }
         }
 

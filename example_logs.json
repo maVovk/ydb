@@ -1,0 +1,1464 @@
+./ydb/apps/ydb/ydb -e grpc://localhost:30266 -d /local sql -f ./test_query.sql --stats full --format=json-unicode
+{"l_returnflag":"A","l_linestatus":"F","sum_qty":37734107,"sum_base_price":56586554400.72897,"sum_disc_price":53758257134.87103,"sum_charge":55909065222.82794,"avg_qty":25.522005853257337,"avg_price":38273.129734620976,"avg_disc":0.04998529583842673,"count_order":1478493}
+{"l_returnflag":"N","l_linestatus":"F","sum_qty":991417,"sum_base_price":1487504710.3800004,"sum_disc_price":1413082168.0540996,"sum_charge":1469649223.194377,"avg_qty":25.516471920522985,"avg_price":38284.46776084831,"avg_disc":0.05009342667421395,"count_order":38854}
+{"l_returnflag":"N","l_linestatus":"O","sum_qty":74476040,"sum_base_price":111701729697.74106,"sum_disc_price":106118230307.60667,"sum_charge":110367043872.49768,"avg_qty":25.50222676958499,"avg_price":38249.117988908634,"avg_disc":0.049996586053576535,"count_order":2920374}
+{"l_returnflag":"R","l_linestatus":"F","sum_qty":37719753,"sum_base_price":56568041380.900024,"sum_disc_price":53741292684.60384,"sum_charge":55889619119.83345,"avg_qty":25.50579361269077,"avg_price":38250.85462609967,"avg_disc":0.050009405830156915,"count_order":1478870}
+
+Statistics:
+query_phases {
+  duration_us: 10309913
+  table_access {
+    name: "/local/column/tpch/lineitem"
+    reads {
+      rows: 5916591
+      bytes: 300263082
+    }
+  }
+  cpu_time_us: 11868837
+}
+compilation {
+  duration_us: 240561
+  cpu_time_us: 232657
+}
+process_cpu_time_us: 210
+total_duration_us: 10553615
+total_cpu_time_us: 12101704
+{
+    "Plan" : {
+        "Plans" : [
+            {
+                "PlanNodeId" : 6,
+                "Plans" : [
+                    {
+                        "PlanNodeId" : 5,
+                        "Plans" : [
+                            {
+                                "PlanNodeId" : 4,
+                                "Plans" : [
+                                    {
+                                        "PlanNodeId" : 3,
+                                        "Plans" : [
+                                            {
+                                                "PlanNodeId" : 2,
+                                                "Plans" : [
+                                                    {
+                                                        "Tables" : [
+                                                            "column/tpch/lineitem"
+                                                        ],
+                                                        "PlanNodeId" : 1,
+                                                        "Operators" : [
+                                                            {
+                                                                "Inputs" : [
+                                                                    {
+                                                                        "InternalOperatorId" : 1
+                                                                    }
+                                                                ],
+                                                                "GroupBy" : "[item.l_linestatus,item.l_returnflag]",
+                                                                "Aggregation" : "{[SUM(item.l_quantity),Inc()],[SUM(item.l_extendedprice),Inc()],[SUM(item.l_discount),Inc()],SUM(1),SUM(item.l_quantity),SUM(item.l_extendedprice),SUM(item.l_extendedprice * (1 - item.l_discount)),SUM(item.l_extendedprice * (1 - item.l_discount) * (1 + item.l_tax))}",
+                                                                "Name" : "Aggregate",
+                                                                "Phase" : "Intermediate"
+                                                            },
+                                                            {
+                                                                "Inputs" : [
+                                                                    {
+                                                                        "InternalOperatorId" : 2
+                                                                    }
+                                                                ],
+                                                                "E-Rows" : "0",
+                                                                "Predicate" : "l_shipdate <= just",
+                                                                "Pushdown" : "True",
+                                                                "Name" : "Filter",
+                                                                "E-Size" : "0",
+                                                                "E-Cost" : "0"
+                                                            },
+                                                            {
+                                                                "Scan" : "Parallel",
+                                                                "E-Size" : "0",
+                                                                "Name" : "TableFullScan",
+                                                                "Inputs" : [ ],
+                                                                "Path" : "/local/column/tpch/lineitem",
+                                                                "E-Rows" : "0",
+                                                                "Table" : "column/tpch/lineitem",
+                                                                "ReadColumns" : [
+                                                                    "l_orderkey (-∞, +∞)",
+                                                                    "l_linenumber (-∞, +∞)",
+                                                                    "l_discount",
+                                                                    "l_extendedprice",
+                                                                    "l_linestatus",
+                                                                    "l_quantity",
+                                                                    "l_returnflag",
+                                                                    "l_shipdate",
+                                                                    "l_tax"
+                                                                ],
+                                                                "SsaProgram" : {
+                                                                    "Command" : [
+                                                                        {
+                                                                            "Assign" : {
+                                                                                "Constant" : {
+                                                                                    "Uint16" : 10471
+                                                                                },
+                                                                                "Column" : {
+                                                                                    "Id" : 17
+                                                                                }
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "Assign" : {
+                                                                                "Function" : {
+                                                                                    "KernelIdx" : 0,
+                                                                                    "FunctionType" : 2,
+                                                                                    "Arguments" : [
+                                                                                        {
+                                                                                            "Id" : 17
+                                                                                        }
+                                                                                    ]
+                                                                                },
+                                                                                "Column" : {
+                                                                                    "Id" : 18
+                                                                                }
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "Assign" : {
+                                                                                "Function" : {
+                                                                                    "YqlOperationId" : 14,
+                                                                                    "KernelIdx" : 1,
+                                                                                    "FunctionType" : 2,
+                                                                                    "Arguments" : [
+                                                                                        {
+                                                                                            "Id" : 12
+                                                                                        },
+                                                                                        {
+                                                                                            "Id" : 18
+                                                                                        }
+                                                                                    ]
+                                                                                },
+                                                                                "Column" : {
+                                                                                    "Id" : 19
+                                                                                }
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "Assign" : {
+                                                                                "Constant" : {
+                                                                                    "Uint8" : 0
+                                                                                },
+                                                                                "Column" : {
+                                                                                    "Id" : 20
+                                                                                }
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "Assign" : {
+                                                                                "Function" : {
+                                                                                    "YqlOperationId" : 17,
+                                                                                    "KernelIdx" : 2,
+                                                                                    "FunctionType" : 2,
+                                                                                    "Arguments" : [
+                                                                                        {
+                                                                                            "Id" : 19
+                                                                                        },
+                                                                                        {
+                                                                                            "Id" : 20
+                                                                                        }
+                                                                                    ]
+                                                                                },
+                                                                                "Column" : {
+                                                                                    "Id" : 21
+                                                                                }
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "Filter" : {
+                                                                                "Predicate" : {
+                                                                                    "Id" : 21
+                                                                                }
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "Projection" : {
+                                                                                "Columns" : [
+                                                                                    {
+                                                                                        "Id" : 3
+                                                                                    },
+                                                                                    {
+                                                                                        "Id" : 4
+                                                                                    },
+                                                                                    {
+                                                                                        "Id" : 6
+                                                                                    },
+                                                                                    {
+                                                                                        "Id" : 9
+                                                                                    },
+                                                                                    {
+                                                                                        "Id" : 11
+                                                                                    },
+                                                                                    {
+                                                                                        "Id" : 16
+                                                                                    }
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                "E-Cost" : "0"
+                                                            }
+                                                        ],
+                                                        "Node Type" : "Aggregate-Filter-TableFullScan",
+                                                        "Stats" : {
+                                                            "Operator" : [
+                                                                {
+                                                                    "Id" : "0",
+                                                                    "Rows" : {
+                                                                        "Count" : 3,
+                                                                        "Sum" : 12,
+                                                                        "Max" : 4,
+                                                                        "Min" : 4
+                                                                    },
+                                                                    "Type" : "Aggregation"
+                                                                }
+                                                            ],
+                                                            "UseLlvm" : "undefined",
+                                                            "Table" : [
+                                                                {
+                                                                    "Path" : "/local/column/tpch/lineitem",
+                                                                    "ReadRows" : {
+                                                                        "Count" : 3,
+                                                                        "Sum" : 5916591,
+                                                                        "Max" : 2565573,
+                                                                        "Min" : 1289981
+                                                                    },
+                                                                    "ReadBytes" : {
+                                                                        "Count" : 3,
+                                                                        "Sum" : 300263082,
+                                                                        "Max" : 130202418,
+                                                                        "Min" : 65464642
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "OutputRows" : {
+                                                                "Count" : 3,
+                                                                "Sum" : 12,
+                                                                "Max" : 4,
+                                                                "Min" : 4
+                                                            },
+                                                            "IngressBytes" : {
+                                                                "Count" : 3,
+                                                                "Sum" : 300263082,
+                                                                "Max" : 130202418,
+                                                                "Min" : 65464642
+                                                            },
+                                                            "PhysicalStageId" : 0,
+                                                            "FinishedTasks" : 3,
+                                                            "IngressRows" : {
+                                                                "Count" : 3,
+                                                                "Sum" : 5916591,
+                                                                "Max" : 2565573,
+                                                                "Min" : 1289981
+                                                            },
+                                                            "DurationUs" : {
+                                                                "Count" : 3,
+                                                                "Sum" : 29200000,
+                                                                "Max" : 9746000,
+                                                                "Min" : 9727000
+                                                            },
+                                                            "MaxMemoryUsage" : {
+                                                                "Count" : 3,
+                                                                "Sum" : 3342336,
+                                                                "Max" : 1114112,
+                                                                "Min" : 1114112,
+                                                                "History" : [
+                                                                    1,
+                                                                    2228224,
+                                                                    10,
+                                                                    3342336,
+                                                                    10301,
+                                                                    3342336
+                                                                ]
+                                                            },
+                                                            "BaseTimeMs" : 1753386912336,
+                                                            "Output" : [
+                                                                {
+                                                                    "Pop" : {
+                                                                        "Chunks" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 6,
+                                                                            "Max" : 2,
+                                                                            "Min" : 2
+                                                                        },
+                                                                        "Rows" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 12,
+                                                                            "Max" : 4,
+                                                                            "Min" : 4
+                                                                        },
+                                                                        "LastMessageMs" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 30875,
+                                                                            "Max" : 10301,
+                                                                            "Min" : 10287
+                                                                        },
+                                                                        "ActiveMessageMs" : {
+                                                                            "Count" : 3,
+                                                                            "Max" : 10301,
+                                                                            "Min" : 10287
+                                                                        },
+                                                                        "FirstMessageMs" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 30875,
+                                                                            "Max" : 10301,
+                                                                            "Min" : 10287
+                                                                        },
+                                                                        "Bytes" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 886,
+                                                                            "Max" : 298,
+                                                                            "Min" : 294
+                                                                        }
+                                                                    },
+                                                                    "Name" : "3",
+                                                                    "Push" : {
+                                                                        "LastMessageMs" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 30875,
+                                                                            "Max" : 10301,
+                                                                            "Min" : 10287
+                                                                        },
+                                                                        "Rows" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 12,
+                                                                            "Max" : 4,
+                                                                            "Min" : 4
+                                                                        },
+                                                                        "Chunks" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 12,
+                                                                            "Max" : 4,
+                                                                            "Min" : 4
+                                                                        },
+                                                                        "ResumeMessageMs" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 30875,
+                                                                            "Max" : 10301,
+                                                                            "Min" : 10287
+                                                                        },
+                                                                        "FirstMessageMs" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 30875,
+                                                                            "Max" : 10301,
+                                                                            "Min" : 10287
+                                                                        },
+                                                                        "ActiveMessageMs" : {
+                                                                            "Count" : 3,
+                                                                            "Max" : 10301,
+                                                                            "Min" : 10287
+                                                                        },
+                                                                        "PauseMessageMs" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 30875,
+                                                                            "Max" : 10301,
+                                                                            "Min" : 10287
+                                                                        },
+                                                                        "WaitTimeUs" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 30866532,
+                                                                            "Max" : 10300591,
+                                                                            "Min" : 10278996
+                                                                        },
+                                                                        "WaitPeriods" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 6,
+                                                                            "Max" : 2,
+                                                                            "Min" : 2
+                                                                        },
+                                                                        "WaitMessageMs" : {
+                                                                            "Count" : 3,
+                                                                            "Max" : 10301,
+                                                                            "Min" : 10287
+                                                                        }
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "CpuTimeUs" : {
+                                                                "Count" : 3,
+                                                                "Sum" : 11661398,
+                                                                "Max" : 5089295,
+                                                                "Min" : 2549566,
+                                                                "History" : [
+                                                                    1,
+                                                                    1221,
+                                                                    563,
+                                                                    3764,
+                                                                    912,
+                                                                    269401,
+                                                                    1290,
+                                                                    543742,
+                                                                    1866,
+                                                                    577952,
+                                                                    1869,
+                                                                    578947,
+                                                                    2037,
+                                                                    849759,
+                                                                    2343,
+                                                                    1398208,
+                                                                    2739,
+                                                                    1978683,
+                                                                    3158,
+                                                                    2755547,
+                                                                    3714,
+                                                                    2951479,
+                                                                    3756,
+                                                                    2953294,
+                                                                    4249,
+                                                                    3605557,
+                                                                    4555,
+                                                                    4045021,
+                                                                    5009,
+                                                                    4774245,
+                                                                    5205,
+                                                                    4994129,
+                                                                    5562,
+                                                                    5537618,
+                                                                    6006,
+                                                                    5595534,
+                                                                    6009,
+                                                                    5595545,
+                                                                    6577,
+                                                                    6422344,
+                                                                    6762,
+                                                                    6734675,
+                                                                    6991,
+                                                                    7122101,
+                                                                    7503,
+                                                                    7876412,
+                                                                    7751,
+                                                                    8279236,
+                                                                    8015,
+                                                                    8420621,
+                                                                    8473,
+                                                                    8843461,
+                                                                    8863,
+                                                                    9410825,
+                                                                    9319,
+                                                                    10062233,
+                                                                    9713,
+                                                                    10718942,
+                                                                    9808,
+                                                                    10856266,
+                                                                    10113,
+                                                                    11366117,
+                                                                    10301,
+                                                                    11661398
+                                                                ]
+                                                            },
+                                                            "Ingress" : [
+                                                                {
+                                                                    "Pop" : { },
+                                                                    "External" : {
+                                                                        "PartitionCount" : 64,
+                                                                        "LastMessageMs" : {
+                                                                            "Count" : 64,
+                                                                            "Sum" : 380846,
+                                                                            "Max" : 10287,
+                                                                            "Min" : 783
+                                                                        },
+                                                                        "ExternalRows" : {
+                                                                            "Count" : 64,
+                                                                            "Sum" : 5916591,
+                                                                            "Max" : 93945,
+                                                                            "Min" : 90998
+                                                                        },
+                                                                        "FinishedPartitionCount" : 64,
+                                                                        "ExternalBytes" : {
+                                                                            "Count" : 64,
+                                                                            "Sum" : 300263082,
+                                                                            "Max" : 4767798,
+                                                                            "Min" : 4618210
+                                                                        },
+                                                                        "FirstMessageMs" : {
+                                                                            "Count" : 64,
+                                                                            "Sum" : 369256,
+                                                                            "Max" : 10215,
+                                                                            "Min" : 555
+                                                                        }
+                                                                    },
+                                                                    "Name" : "CS",
+                                                                    "Ingress" : {
+                                                                        "Rows" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 5916591,
+                                                                            "Max" : 2565573,
+                                                                            "Min" : 1289981
+                                                                        },
+                                                                        "LastMessageMs" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 30820,
+                                                                            "Max" : 10287,
+                                                                            "Min" : 10260
+                                                                        },
+                                                                        "ActiveMessageMs" : {
+                                                                            "Count" : 3,
+                                                                            "Max" : 10287,
+                                                                            "Min" : 555
+                                                                        },
+                                                                        "FirstMessageMs" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 1677,
+                                                                            "Max" : 561,
+                                                                            "Min" : 555
+                                                                        },
+                                                                        "Bytes" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 300263082,
+                                                                            "Max" : 130202418,
+                                                                            "Min" : 65464642
+                                                                        },
+                                                                        "ActiveTimeUs" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 29143000,
+                                                                            "Max" : 9726000,
+                                                                            "Min" : 9699000
+                                                                        }
+                                                                    },
+                                                                    "Push" : { }
+                                                                }
+                                                            ],
+                                                            "StageDurationUs" : 9746000,
+                                                            "WaitInputTimeUs" : {
+                                                                "Count" : 3,
+                                                                "Sum" : 2651223,
+                                                                "Max" : 2369242,
+                                                                "Min" : 19147,
+                                                                "History" : [
+                                                                    811,
+                                                                    27246,
+                                                                    1121,
+                                                                    27246,
+                                                                    1869,
+                                                                    193543,
+                                                                    1890,
+                                                                    791935,
+                                                                    2057,
+                                                                    793812,
+                                                                    2651,
+                                                                    856092,
+                                                                    2994,
+                                                                    918330,
+                                                                    3167,
+                                                                    923156,
+                                                                    3851,
+                                                                    932575,
+                                                                    3880,
+                                                                    1536770,
+                                                                    3953,
+                                                                    1536770,
+                                                                    4411,
+                                                                    1654654,
+                                                                    4703,
+                                                                    1672198,
+                                                                    4993,
+                                                                    1700741,
+                                                                    5163,
+                                                                    1700741,
+                                                                    5401,
+                                                                    1723092,
+                                                                    6060,
+                                                                    1727521,
+                                                                    6066,
+                                                                    2223151,
+                                                                    6392,
+                                                                    2243593,
+                                                                    6867,
+                                                                    2268941,
+                                                                    7074,
+                                                                    2278881,
+                                                                    7289,
+                                                                    2300525,
+                                                                    7584,
+                                                                    2339905,
+                                                                    8351,
+                                                                    2360335,
+                                                                    8362,
+                                                                    2542256,
+                                                                    8545,
+                                                                    2545816,
+                                                                    8799,
+                                                                    2562789,
+                                                                    9207,
+                                                                    2565800,
+                                                                    9385,
+                                                                    2566033,
+                                                                    9740,
+                                                                    2576488,
+                                                                    10061,
+                                                                    2602725,
+                                                                    10301,
+                                                                    2651223
+                                                                ]
+                                                            },
+                                                            "OutputBytes" : {
+                                                                "Count" : 3,
+                                                                "Sum" : 886,
+                                                                "Max" : 298,
+                                                                "Min" : 294
+                                                            },
+                                                            "UpdateTimeMs" : 10301,
+                                                            "Tasks" : 3
+                                                        }
+                                                    }
+                                                ],
+                                                "HashFunc" : "HashV1",
+                                                "Node Type" : "HashShuffle",
+                                                "KeyColumns" : [
+                                                    "l_linestatus",
+                                                    "l_returnflag"
+                                                ],
+                                                "PlanNodeType" : "Connection"
+                                            }
+                                        ],
+                                        "Operators" : [
+                                            {
+                                                "Inputs" : [
+                                                    {
+                                                        "InternalOperatorId" : 1
+                                                    }
+                                                ],
+                                                "SortBy" : "[row.l_returnflag,row.l_linestatus]",
+                                                "Name" : "Sort"
+                                            },
+                                            {
+                                                "Inputs" : [
+                                                    {
+                                                        "ExternalPlanNodeId" : 2
+                                                    }
+                                                ],
+                                                "Name" : "Aggregate",
+                                                "Phase" : "Final"
+                                            }
+                                        ],
+                                        "Node Type" : "Sort-Aggregate",
+                                        "Stats" : {
+                                            "Operator" : [
+                                                {
+                                                    "Id" : "0",
+                                                    "Rows" : {
+                                                        "Count" : 2,
+                                                        "Sum" : 4,
+                                                        "Max" : 3,
+                                                        "Min" : 1
+                                                    },
+                                                    "Type" : "Aggregation"
+                                                }
+                                            ],
+                                            "UseLlvm" : "undefined",
+                                            "Output" : [
+                                                {
+                                                    "Pop" : {
+                                                        "Chunks" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 2,
+                                                            "Max" : 1,
+                                                            "Min" : 1
+                                                        },
+                                                        "Rows" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 4,
+                                                            "Max" : 3,
+                                                            "Min" : 1
+                                                        },
+                                                        "LastMessageMs" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 20602,
+                                                            "Max" : 10301,
+                                                            "Min" : 10301
+                                                        },
+                                                        "FirstMessageMs" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 20602,
+                                                            "Max" : 10301,
+                                                            "Min" : 10301
+                                                        },
+                                                        "Bytes" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 263,
+                                                            "Max" : 195,
+                                                            "Min" : 68
+                                                        }
+                                                    },
+                                                    "Name" : "5",
+                                                    "Push" : {
+                                                        "LastMessageMs" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 20602,
+                                                            "Max" : 10301,
+                                                            "Min" : 10301
+                                                        },
+                                                        "Rows" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 4,
+                                                            "Max" : 3,
+                                                            "Min" : 1
+                                                        },
+                                                        "Chunks" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 4,
+                                                            "Max" : 3,
+                                                            "Min" : 1
+                                                        },
+                                                        "ResumeMessageMs" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 20602,
+                                                            "Max" : 10301,
+                                                            "Min" : 10301
+                                                        },
+                                                        "FirstMessageMs" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 20602,
+                                                            "Max" : 10301,
+                                                            "Min" : 10301
+                                                        },
+                                                        "PauseMessageMs" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 20574,
+                                                            "Max" : 10287,
+                                                            "Min" : 10287
+                                                        },
+                                                        "WaitTimeUs" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 20600525,
+                                                            "Max" : 10300388,
+                                                            "Min" : 10300137
+                                                        },
+                                                        "WaitPeriods" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 2,
+                                                            "Max" : 1,
+                                                            "Min" : 1
+                                                        },
+                                                        "WaitMessageMs" : {
+                                                            "Count" : 2,
+                                                            "Max" : 10301,
+                                                            "Min" : 10287
+                                                        }
+                                                    }
+                                                }
+                                            ],
+                                            "MaxMemoryUsage" : {
+                                                "Count" : 2,
+                                                "Sum" : 4194304,
+                                                "Max" : 2097152,
+                                                "Min" : 2097152,
+                                                "History" : [
+                                                    1,
+                                                    2097152,
+                                                    10,
+                                                    4194304,
+                                                    10301,
+                                                    4194304
+                                                ]
+                                            },
+                                            "DurationUs" : {
+                                                "Count" : 2,
+                                                "Sum" : 28000,
+                                                "Max" : 14000,
+                                                "Min" : 14000
+                                            },
+                                            "InputBytes" : {
+                                                "Count" : 2,
+                                                "Sum" : 886,
+                                                "Max" : 655,
+                                                "Min" : 231
+                                            },
+                                            "Tasks" : 2,
+                                            "OutputRows" : {
+                                                "Count" : 2,
+                                                "Sum" : 4,
+                                                "Max" : 3,
+                                                "Min" : 1
+                                            },
+                                            "FinishedTasks" : 2,
+                                            "InputRows" : {
+                                                "Count" : 2,
+                                                "Sum" : 12,
+                                                "Max" : 9,
+                                                "Min" : 3
+                                            },
+                                            "PhysicalStageId" : 1,
+                                            "StageDurationUs" : 14000,
+                                            "BaseTimeMs" : 1753386912336,
+                                            "OutputBytes" : {
+                                                "Count" : 2,
+                                                "Sum" : 263,
+                                                "Max" : 195,
+                                                "Min" : 68
+                                            },
+                                            "CpuTimeUs" : {
+                                                "Count" : 2,
+                                                "Sum" : 1224,
+                                                "Max" : 644,
+                                                "Min" : 580,
+                                                "History" : [
+                                                    1,
+                                                    373,
+                                                    10,
+                                                    810,
+                                                    1000,
+                                                    815,
+                                                    10013,
+                                                    815,
+                                                    10288,
+                                                    977,
+                                                    10301,
+                                                    1224
+                                                ]
+                                            },
+                                            "UpdateTimeMs" : 10301,
+                                            "Input" : [
+                                                {
+                                                    "Pop" : {
+                                                        "Chunks" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 6,
+                                                            "Max" : 3,
+                                                            "Min" : 3
+                                                        },
+                                                        "Rows" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 12,
+                                                            "Max" : 9,
+                                                            "Min" : 3
+                                                        },
+                                                        "LastMessageMs" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 20602,
+                                                            "Max" : 10301,
+                                                            "Min" : 10301
+                                                        },
+                                                        "ActiveMessageMs" : {
+                                                            "Count" : 2,
+                                                            "Max" : 10301,
+                                                            "Min" : 10287
+                                                        },
+                                                        "FirstMessageMs" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 20574,
+                                                            "Max" : 10287,
+                                                            "Min" : 10287
+                                                        },
+                                                        "Bytes" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 886,
+                                                            "Max" : 655,
+                                                            "Min" : 231
+                                                        },
+                                                        "ActiveTimeUs" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 28000,
+                                                            "Max" : 14000,
+                                                            "Min" : 14000
+                                                        }
+                                                    },
+                                                    "Name" : "1",
+                                                    "Push" : {
+                                                        "Rows" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 12,
+                                                            "Max" : 9,
+                                                            "Min" : 3
+                                                        },
+                                                        "LastMessageMs" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 20602,
+                                                            "Max" : 10301,
+                                                            "Min" : 10301
+                                                        },
+                                                        "Chunks" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 6,
+                                                            "Max" : 3,
+                                                            "Min" : 3
+                                                        },
+                                                        "ResumeMessageMs" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 20602,
+                                                            "Max" : 10301,
+                                                            "Min" : 10301
+                                                        },
+                                                        "FirstMessageMs" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 20574,
+                                                            "Max" : 10287,
+                                                            "Min" : 10287
+                                                        },
+                                                        "ActiveMessageMs" : {
+                                                            "Count" : 2,
+                                                            "Max" : 10301,
+                                                            "Min" : 10287
+                                                        },
+                                                        "Bytes" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 886,
+                                                            "Max" : 655,
+                                                            "Min" : 231
+                                                        },
+                                                        "PauseMessageMs" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 2,
+                                                            "Max" : 1,
+                                                            "Min" : 1
+                                                        },
+                                                        "ActiveTimeUs" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 28000,
+                                                            "Max" : 14000,
+                                                            "Min" : 14000
+                                                        },
+                                                        "WaitTimeUs" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 20582470,
+                                                            "Max" : 10291360,
+                                                            "Min" : 10291110
+                                                        },
+                                                        "WaitPeriods" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 6,
+                                                            "Max" : 3,
+                                                            "Min" : 3
+                                                        },
+                                                        "WaitMessageMs" : {
+                                                            "Count" : 2,
+                                                            "Max" : 10301,
+                                                            "Min" : 1
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ],
+                                "Node Type" : "Merge",
+                                "SortColumns" : [
+                                    "l_returnflag (Asc)",
+                                    "l_linestatus (Asc)"
+                                ],
+                                "PlanNodeType" : "Connection"
+                            }
+                        ],
+                        "Node Type" : "Stage",
+                        "Stats" : {
+                            "UseLlvm" : "undefined",
+                            "Output" : [
+                                {
+                                    "Pop" : {
+                                        "Chunks" : {
+                                            "Count" : 1,
+                                            "Sum" : 1,
+                                            "Max" : 1,
+                                            "Min" : 1
+                                        },
+                                        "Rows" : {
+                                            "Count" : 1,
+                                            "Sum" : 4,
+                                            "Max" : 4,
+                                            "Min" : 4
+                                        },
+                                        "LastMessageMs" : {
+                                            "Count" : 1,
+                                            "Sum" : 10301,
+                                            "Max" : 10301,
+                                            "Min" : 10301
+                                        },
+                                        "FirstMessageMs" : {
+                                            "Count" : 1,
+                                            "Sum" : 10301,
+                                            "Max" : 10301,
+                                            "Min" : 10301
+                                        },
+                                        "Bytes" : {
+                                            "Count" : 1,
+                                            "Sum" : 258,
+                                            "Max" : 258,
+                                            "Min" : 258,
+                                            "History" : [
+                                                10301,
+                                                258
+                                            ]
+                                        }
+                                    },
+                                    "Name" : "RESULT",
+                                    "Push" : {
+                                        "LastMessageMs" : {
+                                            "Count" : 1,
+                                            "Sum" : 10301,
+                                            "Max" : 10301,
+                                            "Min" : 10301
+                                        },
+                                        "Rows" : {
+                                            "Count" : 1,
+                                            "Sum" : 4,
+                                            "Max" : 4,
+                                            "Min" : 4
+                                        },
+                                        "Chunks" : {
+                                            "Count" : 1,
+                                            "Sum" : 4,
+                                            "Max" : 4,
+                                            "Min" : 4
+                                        },
+                                        "ResumeMessageMs" : {
+                                            "Count" : 1,
+                                            "Sum" : 10301,
+                                            "Max" : 10301,
+                                            "Min" : 10301
+                                        },
+                                        "FirstMessageMs" : {
+                                            "Count" : 1,
+                                            "Sum" : 10301,
+                                            "Max" : 10301,
+                                            "Min" : 10301
+                                        },
+                                        "PauseMessageMs" : {
+                                            "Count" : 1,
+                                            "Sum" : 1,
+                                            "Max" : 1,
+                                            "Min" : 1
+                                        },
+                                        "WaitTimeUs" : {
+                                            "Count" : 1,
+                                            "Sum" : 10300496,
+                                            "Max" : 10300496,
+                                            "Min" : 10300496,
+                                            "History" : [
+                                                10301,
+                                                10300496
+                                            ]
+                                        },
+                                        "WaitPeriods" : {
+                                            "Count" : 1,
+                                            "Sum" : 1,
+                                            "Max" : 1,
+                                            "Min" : 1
+                                        },
+                                        "WaitMessageMs" : {
+                                            "Count" : 1,
+                                            "Max" : 10301,
+                                            "Min" : 1
+                                        }
+                                    }
+                                }
+                            ],
+                            "MaxMemoryUsage" : {
+                                "Count" : 1,
+                                "Sum" : 1114112,
+                                "Max" : 1114112,
+                                "Min" : 1114112,
+                                "History" : [
+                                    1,
+                                    65536,
+                                    10006,
+                                    65536,
+                                    10301,
+                                    1114112
+                                ]
+                            },
+                            "InputBytes" : {
+                                "Count" : 1,
+                                "Sum" : 263,
+                                "Max" : 263,
+                                "Min" : 263
+                            },
+                            "ResultRows" : {
+                                "Count" : 1,
+                                "Sum" : 4,
+                                "Max" : 4,
+                                "Min" : 4
+                            },
+                            "Tasks" : 1,
+                            "ResultBytes" : {
+                                "Count" : 1,
+                                "Sum" : 258,
+                                "Max" : 258,
+                                "Min" : 258
+                            },
+                            "OutputRows" : {
+                                "Count" : 1,
+                                "Sum" : 4,
+                                "Max" : 4,
+                                "Min" : 4
+                            },
+                            "FinishedTasks" : 1,
+                            "InputRows" : {
+                                "Count" : 1,
+                                "Sum" : 4,
+                                "Max" : 4,
+                                "Min" : 4
+                            },
+                            "PhysicalStageId" : 2,
+                            "StageDurationUs" : 0,
+                            "BaseTimeMs" : 1753386912336,
+                            "OutputBytes" : {
+                                "Count" : 1,
+                                "Sum" : 258,
+                                "Max" : 258,
+                                "Min" : 258
+                            },
+                            "CpuTimeUs" : {
+                                "Count" : 1,
+                                "Sum" : 237,
+                                "Max" : 237,
+                                "Min" : 237,
+                                "History" : [
+                                    1,
+                                    119,
+                                    10006,
+                                    119,
+                                    10301,
+                                    237
+                                ]
+                            },
+                            "UpdateTimeMs" : 10301,
+                            "Input" : [
+                                {
+                                    "Pop" : {
+                                        "Chunks" : {
+                                            "Count" : 1,
+                                            "Sum" : 2,
+                                            "Max" : 2,
+                                            "Min" : 2
+                                        },
+                                        "Rows" : {
+                                            "Count" : 1,
+                                            "Sum" : 4,
+                                            "Max" : 4,
+                                            "Min" : 4
+                                        },
+                                        "LastMessageMs" : {
+                                            "Count" : 1,
+                                            "Sum" : 10301,
+                                            "Max" : 10301,
+                                            "Min" : 10301
+                                        },
+                                        "FirstMessageMs" : {
+                                            "Count" : 1,
+                                            "Sum" : 10301,
+                                            "Max" : 10301,
+                                            "Min" : 10301
+                                        },
+                                        "Bytes" : {
+                                            "Count" : 1,
+                                            "Sum" : 263,
+                                            "Max" : 263,
+                                            "Min" : 263
+                                        }
+                                    },
+                                    "Name" : "3",
+                                    "Push" : {
+                                        "LastMessageMs" : {
+                                            "Count" : 1,
+                                            "Sum" : 10301,
+                                            "Max" : 10301,
+                                            "Min" : 10301
+                                        },
+                                        "Rows" : {
+                                            "Count" : 1,
+                                            "Sum" : 4,
+                                            "Max" : 4,
+                                            "Min" : 4
+                                        },
+                                        "Chunks" : {
+                                            "Count" : 1,
+                                            "Sum" : 2,
+                                            "Max" : 2,
+                                            "Min" : 2
+                                        },
+                                        "ResumeMessageMs" : {
+                                            "Count" : 1,
+                                            "Sum" : 10301,
+                                            "Max" : 10301,
+                                            "Min" : 10301
+                                        },
+                                        "FirstMessageMs" : {
+                                            "Count" : 1,
+                                            "Sum" : 10301,
+                                            "Max" : 10301,
+                                            "Min" : 10301
+                                        },
+                                        "Bytes" : {
+                                            "Count" : 1,
+                                            "Sum" : 263,
+                                            "Max" : 263,
+                                            "Min" : 263
+                                        },
+                                        "PauseMessageMs" : {
+                                            "Count" : 1,
+                                            "Sum" : 1,
+                                            "Max" : 1,
+                                            "Min" : 1
+                                        },
+                                        "WaitTimeUs" : {
+                                            "Count" : 1,
+                                            "Sum" : 5150191,
+                                            "Max" : 5150191,
+                                            "Min" : 5150191
+                                        },
+                                        "WaitPeriods" : {
+                                            "Count" : 1,
+                                            "Sum" : 1,
+                                            "Max" : 1,
+                                            "Min" : 1
+                                        },
+                                        "WaitMessageMs" : {
+                                            "Count" : 1,
+                                            "Max" : 10301,
+                                            "Min" : 1
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "Node Type" : "ResultSet",
+                "PlanNodeType" : "ResultSet"
+            }
+        ],
+        "Node Type" : "Query",
+        "Stats" : {
+            "Compilation" : {
+                "FromCache" : false,
+                "DurationUs" : 240561,
+                "CpuTimeUs" : 232657
+            },
+            "ProcessCpuTimeUs" : 210,
+            "TotalDurationUs" : 10553615,
+            "ResourcePoolId" : "default",
+            "QueuedTimeUs" : 478
+        },
+        "PlanNodeType" : "Query"
+    },
+    "meta" : {
+        "version" : "0.2",
+        "type" : "query"
+    },
+    "SimplifiedPlan" : {
+        "PlanNodeId" : 0,
+        "Plans" : [
+            {
+                "PlanNodeId" : 1,
+                "Plans" : [
+                    {
+                        "PlanNodeId" : 4,
+                        "Plans" : [
+                            {
+                                "PlanNodeId" : 5,
+                                "Plans" : [
+                                    {
+                                        "PlanNodeId" : 6,
+                                        "Plans" : [
+                                            {
+                                                "PlanNodeId" : 7,
+                                                "Plans" : [
+                                                    {
+                                                        "PlanNodeId" : 8,
+                                                        "Plans" : [
+                                                            {
+                                                                "PlanNodeId" : 9,
+                                                                "Operators" : [
+                                                                    {
+                                                                        "E-Size" : "0",
+                                                                        "Name" : "TableFullScan",
+                                                                        "A-Rows" : 5916591,
+                                                                        "E-Rows" : "0",
+                                                                        "Table" : "lineitem",
+                                                                        "ReadColumns" : [
+                                                                            "l_orderkey (-∞, +∞)",
+                                                                            "l_linenumber (-∞, +∞)",
+                                                                            "l_discount",
+                                                                            "l_extendedprice",
+                                                                            "l_linestatus",
+                                                                            "l_quantity",
+                                                                            "l_returnflag",
+                                                                            "l_shipdate",
+                                                                            "l_tax"
+                                                                        ],
+                                                                        "A-Size" : 300263082,
+                                                                        "SsaProgram" : {
+                                                                            "Command" : [
+                                                                                {
+                                                                                    "Assign" : {
+                                                                                        "Constant" : {
+                                                                                            "Uint16" : 10471
+                                                                                        },
+                                                                                        "Column" : {
+                                                                                            "Id" : 17
+                                                                                        }
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "Assign" : {
+                                                                                        "Function" : {
+                                                                                            "KernelIdx" : 0,
+                                                                                            "FunctionType" : 2,
+                                                                                            "Arguments" : [
+                                                                                                {
+                                                                                                    "Id" : 17
+                                                                                                }
+                                                                                            ]
+                                                                                        },
+                                                                                        "Column" : {
+                                                                                            "Id" : 18
+                                                                                        }
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "Assign" : {
+                                                                                        "Function" : {
+                                                                                            "YqlOperationId" : 14,
+                                                                                            "KernelIdx" : 1,
+                                                                                            "FunctionType" : 2,
+                                                                                            "Arguments" : [
+                                                                                                {
+                                                                                                    "Id" : 12
+                                                                                                },
+                                                                                                {
+                                                                                                    "Id" : 18
+                                                                                                }
+                                                                                            ]
+                                                                                        },
+                                                                                        "Column" : {
+                                                                                            "Id" : 19
+                                                                                        }
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "Assign" : {
+                                                                                        "Constant" : {
+                                                                                            "Uint8" : 0
+                                                                                        },
+                                                                                        "Column" : {
+                                                                                            "Id" : 20
+                                                                                        }
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "Assign" : {
+                                                                                        "Function" : {
+                                                                                            "YqlOperationId" : 17,
+                                                                                            "KernelIdx" : 2,
+                                                                                            "FunctionType" : 2,
+                                                                                            "Arguments" : [
+                                                                                                {
+                                                                                                    "Id" : 19
+                                                                                                },
+                                                                                                {
+                                                                                                    "Id" : 20
+                                                                                                }
+                                                                                            ]
+                                                                                        },
+                                                                                        "Column" : {
+                                                                                            "Id" : 21
+                                                                                        }
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "Filter" : {
+                                                                                        "Predicate" : {
+                                                                                            "Id" : 21
+                                                                                        }
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "Projection" : {
+                                                                                        "Columns" : [
+                                                                                            {
+                                                                                                "Id" : 3
+                                                                                            },
+                                                                                            {
+                                                                                                "Id" : 4
+                                                                                            },
+                                                                                            {
+                                                                                                "Id" : 6
+                                                                                            },
+                                                                                            {
+                                                                                                "Id" : 9
+                                                                                            },
+                                                                                            {
+                                                                                                "Id" : 11
+                                                                                            },
+                                                                                            {
+                                                                                                "Id" : 16
+                                                                                            }
+                                                                                        ]
+                                                                                    }
+                                                                                }
+                                                                            ]
+                                                                        },
+                                                                        "E-Cost" : "0"
+                                                                    }
+                                                                ],
+                                                                "Node Type" : "TableFullScan"
+                                                            }
+                                                        ],
+                                                        "Operators" : [
+                                                            {
+                                                                "E-Rows" : "0",
+                                                                "Predicate" : "l_shipdate <= just",
+                                                                "Pushdown" : "True",
+                                                                "Name" : "Filter",
+                                                                "E-Size" : "0",
+                                                                "E-Cost" : "0"
+                                                            }
+                                                        ],
+                                                        "Node Type" : "Filter"
+                                                    }
+                                                ],
+                                                "Operators" : [
+                                                    {
+                                                        "GroupBy" : "[item.l_linestatus,item.l_returnflag]",
+                                                        "Aggregation" : "{[SUM(item.l_quantity),Inc()],[SUM(item.l_extendedprice),Inc()],[SUM(item.l_discount),Inc()],SUM(1),SUM(item.l_quantity),SUM(item.l_extendedprice),SUM(item.l_extendedprice * (1 - item.l_discount)),SUM(item.l_extendedprice * (1 - item.l_discount) * (1 + item.l_tax))}",
+                                                        "Name" : "Aggregate",
+                                                        "A-SelfCpu" : 5089.295,
+                                                        "A-Rows" : 12,
+                                                        "A-Cpu" : 5089.295,
+                                                        "Phase" : "Intermediate",
+                                                        "A-Size" : 886
+                                                    }
+                                                ],
+                                                "Node Type" : "Aggregate"
+                                            }
+                                        ],
+                                        "Node Type" : "HashShuffle (KeyColumns: [\"l_linestatus\",\"l_returnflag\"], HashFunc: \"HashV1\")",
+                                        "PlanNodeType" : "Connection"
+                                    }
+                                ],
+                                "Operators" : [
+                                    {
+                                        "A-Rows" : 4,
+                                        "Name" : "Aggregate",
+                                        "Phase" : "Final"
+                                    }
+                                ],
+                                "Node Type" : "Aggregate"
+                            }
+                        ],
+                        "Operators" : [
+                            {
+                                "A-Rows" : 4,
+                                "A-SelfCpu" : 0.644,
+                                "A-Cpu" : 5089.939,
+                                "A-Size" : 263,
+                                "SortBy" : "[row.l_returnflag,row.l_linestatus]",
+                                "Name" : "Sort"
+                            }
+                        ],
+                        "Node Type" : "Sort"
+                    }
+                ],
+                "Node Type" : "ResultSet",
+                "PlanNodeType" : "ResultSet"
+            }
+        ],
+        "Node Type" : "Query",
+        "PlanNodeType" : "Query"
+    }
+}

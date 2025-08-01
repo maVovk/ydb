@@ -1021,6 +1021,8 @@ public:
 };
 #endif
 
+bool allocatedHugeChunk = false; 
+
 template <bool TrackRss, bool SkipYields>
 class TWideCombinerWrapper: public TStatefulWideFlowCodegeneratorNode<TWideCombinerWrapper<TrackRss, SkipYields>>
 #ifndef MKQL_DISABLE_CODEGEN
@@ -1029,18 +1031,38 @@ class TWideCombinerWrapper: public TStatefulWideFlowCodegeneratorNode<TWideCombi
 {
 using TBaseComputation = TStatefulWideFlowCodegeneratorNode<TWideCombinerWrapper<TrackRss, SkipYields>>;
 public:
-    TWideCombinerWrapper(TComputationMutables& mutables, IComputationWideFlowNode* flow, TCombinerNodes&& nodes, TKeyTypes&& keyTypes, ui64 memLimit)
+    TWideCombinerWrapper(TComputationMutables& mutables, IComputationWideFlowNode* flow, TCombinerNodes&& nodes, TKeyTypes&& keyTypes, ui64 memLimit, TGUID nodeGUID)
         : TBaseComputation(mutables, flow, EValueRepresentation::Boxed)
         , Flow(flow)
         , Nodes(std::move(nodes))
         , KeyTypes(std::move(keyTypes))
         , MemLimit(memLimit)
         , WideFieldsIndex(mutables.IncrementWideFieldsIndex(Nodes.ItemNodes.size()))
-    {}
+    {
+        // TODO: поискать какой-то существующий идентификатор или адрес входящего объекта
+        this->NodeGUID = nodeGUID;
+    }
 
     EFetchResult DoCalculate(NUdf::TUnboxedValue& state, TComputationContext& ctx, NUdf::TUnboxedValue*const* output) const {
+        // TODO: посмотреть стек вызовов и оставить минимум гардов
         if (state.IsInvalid()) {
             MakeState(ctx, state);
+        }
+
+        auto stateGuard = TAllocStateGuard(this->NodeGUID.GetRef(), &CounterOutputBytes_, "DoCalculate");
+
+        if (!allocatedHugeChunk) {  // выделяем память один раз
+            // попробуем выделить 5 MB памяти, чтобы проверить, что это появится в OperatorsMaxMemoryUsage
+            int32_t* testArr = new int32_t[(4*1024*1024)*5];
+            // чтобы точно не случилось оптимизаций и память была "потрогана"
+            testArr[4*1024*1024] = 157;
+            testArr[4*1024*1024*5 - 100] = this->NodeGUID.Get()->AsGuidString()[2];
+            allocatedHugeChunk = true;
+
+            TStringBuilder logmsg;
+            logmsg << "Allocated 5 MB for operator: " << this->NodeGUID.Get()->AsGuidString() << '\n';
+            std::cerr << logmsg;
+            std::cerr.flush();
         }
 
         while (const auto ptr = static_cast<TState*>(state.AsBoxed().Get())) {
@@ -1100,6 +1122,22 @@ public:
     }
 #ifndef MKQL_DISABLE_CODEGEN
     ICodegeneratorInlineWideNode::TGenerateResult DoGenGetValues(const TCodegenContext& ctx, Value* statePtr, BasicBlock*& block) const {
+        auto stateGuard = TAllocStateGuard(this->NodeGUID.GetRef(), &CounterOutputBytes_, "DoGenGetValues");
+
+        if (!allocatedHugeChunk) {  // выделяем память один раз
+            // попробуем выделить 5 MB памяти, чтобы проверить, что это появится в OperatorsMaxMemoryUsage
+            int32_t* testArr = new int32_t[(4*1024*1024)*5];
+            // чтобы точно не случилось оптимизаций и память была "потрогана"
+            testArr[4*1024*1024] = 157;
+            testArr[4*1024*1024*5 - 100] = this->NodeGUID.Get()->AsGuidString()[2];
+            allocatedHugeChunk = true;
+
+            TStringBuilder logmsg;
+            logmsg << "Allocated 5 MB for operator: " << this->NodeGUID.Get()->AsGuidString() << '\n';
+            std::cerr << logmsg;
+            std::cerr.flush();
+        }
+
         auto& context = ctx.Codegen.GetContext();
 
         const auto valueType = Type::getInt128Ty(context);
@@ -1428,7 +1466,7 @@ private:
     void MakeState(TComputationContext& ctx, NUdf::TUnboxedValue& state) const {
         NYql::NUdf::TLoggerPtr logger = ctx.MakeLogger();
         NYql::NUdf::TLogComponentId logComponent = logger->RegisterComponent("WideCombine");
-        UDF_LOG(logger, logComponent, NUdf::ELogLevel::Debug, TStringBuilder() << "State initialized");
+        UDF_LOG(logger, logComponent, NUdf::ELogLevel::Warn, TStringBuilder() << "State initialized for " << this->NodeGUID.Get()->AsGuidString());
 
 #ifdef MKQL_DISABLE_CODEGEN
         state = ctx.HolderFactory.Create<TState>(Nodes.KeyNodes.size(), Nodes.StateNodes.size(),
@@ -1445,6 +1483,7 @@ private:
             // id will be assigned externally in future versions
             TString id = TString(Operator_Aggregation) + "0";
             ptr->CounterOutputRows_ = ctx.CountersProvider->GetCounter(id, Counter_OutputRows, false);
+            CounterOutputBytes_ = ctx.CountersProvider->GetCounter(id, Counter_OutputBytes, false);
         }
     }
 
@@ -1463,6 +1502,7 @@ private:
     const ui64 MemLimit;
 
     const ui32 WideFieldsIndex;
+    mutable NYql::NUdf::TCounter CounterOutputBytes_;
 
 #ifndef MKQL_DISABLE_CODEGEN
     TEqualsPtr Equals = nullptr;
@@ -1938,6 +1978,16 @@ template<bool Last>
 IComputationNode* WrapWideCombinerT(TCallable& callable, const TComputationNodeFactoryContext& ctx, bool allowSpilling) {
     MKQL_ENSURE(callable.GetInputsCount() >= (Last ? 3U : 4U), "Expected more arguments.");
 
+    static auto random = CreateDefaultRandomProvider();
+    TGUID nodeGUID = random->GenGuid();
+
+    Y_ABORT("No changes?");
+    TStringBuilder logmsg;
+    logmsg << "Hi! WrapWideCombiner " << nodeGUID.AsGuidString() << " ??????\n";
+    // logmsg << " (" << reinterpret_cast<uint64_t>((void*)(&callable)) << ")" << '\n';
+    std::cerr << logmsg;
+    std::cerr.flush();
+
     const auto inputType = AS_TYPE(TFlowType, callable.GetInput(0U).GetStaticType());
     const auto inputWidth = GetWideComponentsCount(inputType);
     const auto outputWidth = GetWideComponentsCount(AS_TYPE(TFlowType, callable.GetType()->GetReturnType()));
@@ -2013,14 +2063,14 @@ IComputationNode* WrapWideCombinerT(TCallable& callable, const TComputationNodeF
         } else {
             if (const auto memLimit = AS_VALUE(TDataLiteral, callable.GetInput(1U))->AsValue().Get<i64>(); memLimit >= 0)
                 if (EGraphPerProcess::Single == ctx.GraphPerProcess)
-                    return new TWideCombinerWrapper<true, false>(ctx.Mutables, wide, std::move(nodes), std::move(keyTypes), ui64(memLimit));
+                    return new TWideCombinerWrapper<true, false>(ctx.Mutables, wide, std::move(nodes), std::move(keyTypes), ui64(memLimit), nodeGUID);
                 else
-                    return new TWideCombinerWrapper<false, false>(ctx.Mutables, wide, std::move(nodes), std::move(keyTypes), ui64(memLimit));
+                    return new TWideCombinerWrapper<false, false>(ctx.Mutables, wide, std::move(nodes), std::move(keyTypes), ui64(memLimit), nodeGUID);
             else
                 if (EGraphPerProcess::Single == ctx.GraphPerProcess)
-                    return new TWideCombinerWrapper<true, true>(ctx.Mutables, wide, std::move(nodes), std::move(keyTypes), ui64(-memLimit));
+                    return new TWideCombinerWrapper<true, true>(ctx.Mutables, wide, std::move(nodes), std::move(keyTypes), ui64(-memLimit), nodeGUID);
                 else
-                    return new TWideCombinerWrapper<false, true>(ctx.Mutables, wide, std::move(nodes), std::move(keyTypes), ui64(-memLimit));
+                    return new TWideCombinerWrapper<false, true>(ctx.Mutables, wide, std::move(nodes), std::move(keyTypes), ui64(-memLimit), nodeGUID);
         }
     }
 

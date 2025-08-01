@@ -12,6 +12,7 @@ constexpr TStringRef Operator_Join("Operator.Join.");
 constexpr TStringRef Operator_Aggregation("Operator.Aggregation.");
 
 constexpr TStringRef Counter_OutputRows("OutputRows");
+constexpr TStringRef Counter_OutputBytes("OutputBytes");
 
 }
 }

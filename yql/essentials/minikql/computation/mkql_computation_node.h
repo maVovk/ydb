@@ -158,6 +158,8 @@ public:
     typedef TIntrusivePtr<IComputationNode> TPtr;
     typedef std::map<ui32, EValueRepresentation> TIndexesMap;
 
+    TMaybe<TGUID, NMaybe::TPolicyUndefinedFail> NodeGUID;
+
     virtual ~IComputationNode() {}
 
     virtual void InitNode(TComputationContext&) const = 0;

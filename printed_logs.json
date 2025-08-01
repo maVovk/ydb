@@ -1,0 +1,1184 @@
+{"l_linestatus":"F"}
+{"l_linestatus":"O"}
+
+Statistics:
+query_phases {
+  duration_us: 3948122
+  table_access {
+    name: "/local/column/tpch/lineitem"
+    reads {
+      rows: 6001215
+      bytes: 78015795
+    }
+  }
+  cpu_time_us: 6893470
+}
+compilation {
+  from_cache: true
+}
+process_cpu_time_us: 106
+total_duration_us: 3950355
+total_cpu_time_us: 6893576
+{
+    "Plan" : {
+        "Plans" : [
+            {
+                "PlanNodeId" : 6,
+                "Plans" : [
+                    {
+                        "PlanNodeId" : 5,
+                        "Plans" : [
+                            {
+                                "PlanNodeId" : 4,
+                                "Plans" : [
+                                    {
+                                        "PlanNodeId" : 3,
+                                        "Plans" : [
+                                            {
+                                                "PlanNodeId" : 2,
+                                                "Plans" : [
+                                                    {
+                                                        "Tables" : [
+                                                            "column/tpch/lineitem"
+                                                        ],
+                                                        "PlanNodeId" : 1,
+                                                        "Operators" : [
+                                                            {
+                                                                "Inputs" : [
+                                                                    {
+                                                                        "InternalOperatorId" : 1
+                                                                    }
+                                                                ],
+                                                                "GroupBy" : "item.l_linestatus",
+                                                                "Aggregation" : "state",
+                                                                "Name" : "Aggregate",
+                                                                "Phase" : "Intermediate"
+                                                            },
+                                                            {
+                                                                "Scan" : "Parallel",
+                                                                "E-Size" : "0",
+                                                                "Name" : "TableFullScan",
+                                                                "Inputs" : [ ],
+                                                                "Path" : "/local/column/tpch/lineitem",
+                                                                "E-Rows" : "0",
+                                                                "Table" : "column/tpch/lineitem",
+                                                                "ReadColumns" : [
+                                                                    "l_orderkey (-∞, +∞)",
+                                                                    "l_linenumber (-∞, +∞)",
+                                                                    "l_linestatus"
+                                                                ],
+                                                                "SsaProgram" : {
+                                                                    "Command" : [
+                                                                        {
+                                                                            "Projection" : {
+                                                                                "Columns" : [
+                                                                                    {
+                                                                                        "Id" : 6
+                                                                                    }
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                "E-Cost" : "0"
+                                                            }
+                                                        ],
+                                                        "Node Type" : "Aggregate-TableFullScan",
+                                                        "Stats" : {
+                                                            "Operator" : [
+                                                                {
+                                                                    "Id" : "0",
+                                                                    "Rows" : {
+                                                                        "Count" : 3,
+                                                                        "Sum" : 6,
+                                                                        "Max" : 2,
+                                                                        "Min" : 2
+                                                                    },
+                                                                    "Type" : "Aggregation"
+                                                                }
+                                                            ],
+                                                            "UseLlvm" : "undefined",
+                                                            "Table" : [
+                                                                {
+                                                                    "Path" : "/local/column/tpch/lineitem",
+                                                                    "ReadRows" : {
+                                                                        "Count" : 3,
+                                                                        "Sum" : 6001215,
+                                                                        "Max" : 2512685,
+                                                                        "Min" : 1419881
+                                                                    },
+                                                                    "ReadBytes" : {
+                                                                        "Count" : 3,
+                                                                        "Sum" : 78015795,
+                                                                        "Max" : 32664905,
+                                                                        "Min" : 18458453
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "OutputRows" : {
+                                                                "Count" : 3,
+                                                                "Sum" : 6,
+                                                                "Max" : 2,
+                                                                "Min" : 2
+                                                            },
+                                                            "IngressBytes" : {
+                                                                "Count" : 3,
+                                                                "Sum" : 78015795,
+                                                                "Max" : 32664905,
+                                                                "Min" : 18458453
+                                                            },
+                                                            "PhysicalStageId" : 0,
+                                                            "FinishedTasks" : 3,
+                                                            "IngressRows" : {
+                                                                "Count" : 3,
+                                                                "Sum" : 6001215,
+                                                                "Max" : 2512685,
+                                                                "Min" : 1419881
+                                                            },
+                                                            "DurationUs" : {
+                                                                "Count" : 3,
+                                                                "Sum" : 11688000,
+                                                                "Max" : 3916000,
+                                                                "Min" : 3874000
+                                                            },
+                                                            "MaxMemoryUsage" : {
+                                                                "Count" : 3,
+                                                                "Sum" : 3342336,
+                                                                "Max" : 1114112,
+                                                                "Min" : 1114112,
+                                                                "History" : [
+                                                                    1,
+                                                                    3342336,
+                                                                    3946,
+                                                                    3342336
+                                                                ]
+                                                            },
+                                                            "BaseTimeMs" : 1753878531799,
+                                                            "Output" : [
+                                                                {
+                                                                    "Pop" : {
+                                                                        "Chunks" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 3,
+                                                                            "Max" : 1,
+                                                                            "Min" : 1
+                                                                        },
+                                                                        "Rows" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 6,
+                                                                            "Max" : 2,
+                                                                            "Min" : 2
+                                                                        },
+                                                                        "LastMessageMs" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 11829,
+                                                                            "Max" : 3946,
+                                                                            "Min" : 3941
+                                                                        },
+                                                                        "ActiveMessageMs" : {
+                                                                            "Count" : 3,
+                                                                            "Max" : 3946,
+                                                                            "Min" : 3941
+                                                                        },
+                                                                        "FirstMessageMs" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 11829,
+                                                                            "Max" : 3946,
+                                                                            "Min" : 3941
+                                                                        },
+                                                                        "Bytes" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 18,
+                                                                            "Max" : 6,
+                                                                            "Min" : 6
+                                                                        }
+                                                                    },
+                                                                    "Name" : "3",
+                                                                    "Push" : {
+                                                                        "LastMessageMs" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 11829,
+                                                                            "Max" : 3946,
+                                                                            "Min" : 3941
+                                                                        },
+                                                                        "Rows" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 6,
+                                                                            "Max" : 2,
+                                                                            "Min" : 2
+                                                                        },
+                                                                        "Chunks" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 6,
+                                                                            "Max" : 2,
+                                                                            "Min" : 2
+                                                                        },
+                                                                        "ResumeMessageMs" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 11829,
+                                                                            "Max" : 3946,
+                                                                            "Min" : 3941
+                                                                        },
+                                                                        "FirstMessageMs" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 11829,
+                                                                            "Max" : 3946,
+                                                                            "Min" : 3941
+                                                                        },
+                                                                        "ActiveMessageMs" : {
+                                                                            "Count" : 3,
+                                                                            "Max" : 3946,
+                                                                            "Min" : 3941
+                                                                        },
+                                                                        "PauseMessageMs" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 11828,
+                                                                            "Max" : 3946,
+                                                                            "Min" : 3941
+                                                                        },
+                                                                        "WaitTimeUs" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 11826309,
+                                                                            "Max" : 3945125,
+                                                                            "Min" : 3940179
+                                                                        },
+                                                                        "WaitPeriods" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 3,
+                                                                            "Max" : 1,
+                                                                            "Min" : 1
+                                                                        },
+                                                                        "WaitMessageMs" : {
+                                                                            "Count" : 3,
+                                                                            "Max" : 3946,
+                                                                            "Min" : 3941
+                                                                        }
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "CpuTimeUs" : {
+                                                                "Count" : 3,
+                                                                "Sum" : 6785011,
+                                                                "Max" : 2872757,
+                                                                "Min" : 1602384,
+                                                                "History" : [
+                                                                    1,
+                                                                    1085,
+                                                                    295,
+                                                                    496717,
+                                                                    387,
+                                                                    643085,
+                                                                    552,
+                                                                    909887,
+                                                                    596,
+                                                                    974652,
+                                                                    666,
+                                                                    1095423,
+                                                                    778,
+                                                                    1281779,
+                                                                    983,
+                                                                    1652661,
+                                                                    1034,
+                                                                    1717323,
+                                                                    1307,
+                                                                    2164123,
+                                                                    1441,
+                                                                    2369863,
+                                                                    1600,
+                                                                    2640057,
+                                                                    1658,
+                                                                    2737902,
+                                                                    1741,
+                                                                    2880671,
+                                                                    1799,
+                                                                    3003806,
+                                                                    1949,
+                                                                    3200359,
+                                                                    2048,
+                                                                    3379157,
+                                                                    2193,
+                                                                    3652894,
+                                                                    2411,
+                                                                    4067712,
+                                                                    2494,
+                                                                    4229604,
+                                                                    2592,
+                                                                    4413119,
+                                                                    2734,
+                                                                    4618312,
+                                                                    2825,
+                                                                    4763172,
+                                                                    2927,
+                                                                    4948637,
+                                                                    3129,
+                                                                    5347128,
+                                                                    3355,
+                                                                    5741679,
+                                                                    3462,
+                                                                    5927409,
+                                                                    3569,
+                                                                    6133043,
+                                                                    3629,
+                                                                    6265738,
+                                                                    3751,
+                                                                    6463497,
+                                                                    3905,
+                                                                    6688721,
+                                                                    3946,
+                                                                    6785011
+                                                                ]
+                                                            },
+                                                            "Ingress" : [
+                                                                {
+                                                                    "Pop" : { },
+                                                                    "External" : {
+                                                                        "PartitionCount" : 64,
+                                                                        "LastMessageMs" : {
+                                                                            "Count" : 64,
+                                                                            "Sum" : 132028,
+                                                                            "Max" : 3941,
+                                                                            "Min" : 114
+                                                                        },
+                                                                        "ExternalRows" : {
+                                                                            "Count" : 64,
+                                                                            "Sum" : 6001215,
+                                                                            "Max" : 95292,
+                                                                            "Min" : 92268
+                                                                        },
+                                                                        "FinishedPartitionCount" : 64,
+                                                                        "ExternalBytes" : {
+                                                                            "Count" : 64,
+                                                                            "Sum" : 78015795,
+                                                                            "Max" : 1238796,
+                                                                            "Min" : 1199484
+                                                                        },
+                                                                        "FirstMessageMs" : {
+                                                                            "Count" : 64,
+                                                                            "Sum" : 123518,
+                                                                            "Max" : 3891,
+                                                                            "Min" : 30
+                                                                        }
+                                                                    },
+                                                                    "Name" : "CS",
+                                                                    "Ingress" : {
+                                                                        "Rows" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 6001215,
+                                                                            "Max" : 2512685,
+                                                                            "Min" : 1419881
+                                                                        },
+                                                                        "LastMessageMs" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 11794,
+                                                                            "Max" : 3941,
+                                                                            "Min" : 3923
+                                                                        },
+                                                                        "ActiveMessageMs" : {
+                                                                            "Count" : 3,
+                                                                            "Max" : 3941,
+                                                                            "Min" : 30
+                                                                        },
+                                                                        "FirstMessageMs" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 141,
+                                                                            "Max" : 67,
+                                                                            "Min" : 30
+                                                                        },
+                                                                        "Bytes" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 78015795,
+                                                                            "Max" : 32664905,
+                                                                            "Min" : 18458453
+                                                                        },
+                                                                        "ActiveTimeUs" : {
+                                                                            "Count" : 3,
+                                                                            "Sum" : 11653000,
+                                                                            "Max" : 3900000,
+                                                                            "Min" : 3874000
+                                                                        }
+                                                                    },
+                                                                    "Push" : { }
+                                                                }
+                                                            ],
+                                                            "StageDurationUs" : 3916000,
+                                                            "WaitInputTimeUs" : {
+                                                                "Count" : 3,
+                                                                "Sum" : 253361,
+                                                                "Max" : 134020,
+                                                                "Min" : 16285,
+                                                                "History" : [
+                                                                    135,
+                                                                    1658,
+                                                                    316,
+                                                                    6213,
+                                                                    472,
+                                                                    26668,
+                                                                    546,
+                                                                    60160,
+                                                                    632,
+                                                                    60160,
+                                                                    747,
+                                                                    62160,
+                                                                    941,
+                                                                    71137,
+                                                                    1044,
+                                                                    73253,
+                                                                    1125,
+                                                                    88164,
+                                                                    1245,
+                                                                    90723,
+                                                                    1491,
+                                                                    109289,
+                                                                    1507,
+                                                                    109289,
+                                                                    1623,
+                                                                    112994,
+                                                                    1747,
+                                                                    115940,
+                                                                    1958,
+                                                                    136773,
+                                                                    2048,
+                                                                    136898,
+                                                                    2153,
+                                                                    171691,
+                                                                    2213,
+                                                                    174569,
+                                                                    2403,
+                                                                    186728,
+                                                                    2494,
+                                                                    187023,
+                                                                    2592,
+                                                                    188977,
+                                                                    2718,
+                                                                    193103,
+                                                                    2948,
+                                                                    212018,
+                                                                    3012,
+                                                                    222933,
+                                                                    3129,
+                                                                    226993,
+                                                                    3192,
+                                                                    227157,
+                                                                    3333,
+                                                                    228444,
+                                                                    3485,
+                                                                    229649,
+                                                                    3590,
+                                                                    231687,
+                                                                    3711,
+                                                                    234860,
+                                                                    3816,
+                                                                    243513,
+                                                                    3946,
+                                                                    253361
+                                                                ]
+                                                            },
+                                                            "OutputBytes" : {
+                                                                "Count" : 3,
+                                                                "Sum" : 18,
+                                                                "Max" : 6,
+                                                                "Min" : 6
+                                                            },
+                                                            "UpdateTimeMs" : 3946,
+                                                            "Tasks" : 3
+                                                        }
+                                                    }
+                                                ],
+                                                "HashFunc" : "HashV1",
+                                                "Node Type" : "HashShuffle",
+                                                "KeyColumns" : [
+                                                    "l_linestatus"
+                                                ],
+                                                "PlanNodeType" : "Connection"
+                                            }
+                                        ],
+                                        "Operators" : [
+                                            {
+                                                "Inputs" : [
+                                                    {
+                                                        "ExternalPlanNodeId" : 2
+                                                    }
+                                                ],
+                                                "Name" : "Aggregate",
+                                                "Phase" : "Final"
+                                            }
+                                        ],
+                                        "Node Type" : "Aggregate",
+                                        "Stats" : {
+                                            "Operator" : [
+                                                {
+                                                    "Id" : "0",
+                                                    "Rows" : {
+                                                        "Count" : 1,
+                                                        "Sum" : 2,
+                                                        "Max" : 2,
+                                                        "Min" : 2
+                                                    },
+                                                    "Type" : "Aggregation"
+                                                }
+                                            ],
+                                            "UseLlvm" : "undefined",
+                                            "Output" : [
+                                                {
+                                                    "Pop" : {
+                                                        "Chunks" : {
+                                                            "Count" : 1,
+                                                            "Sum" : 1,
+                                                            "Max" : 1,
+                                                            "Min" : 1
+                                                        },
+                                                        "Rows" : {
+                                                            "Count" : 1,
+                                                            "Sum" : 2,
+                                                            "Max" : 2,
+                                                            "Min" : 2
+                                                        },
+                                                        "LastMessageMs" : {
+                                                            "Count" : 1,
+                                                            "Sum" : 3946,
+                                                            "Max" : 3946,
+                                                            "Min" : 3946
+                                                        },
+                                                        "FirstMessageMs" : {
+                                                            "Count" : 1,
+                                                            "Sum" : 3946,
+                                                            "Max" : 3946,
+                                                            "Min" : 3946
+                                                        },
+                                                        "Bytes" : {
+                                                            "Count" : 1,
+                                                            "Sum" : 6,
+                                                            "Max" : 6,
+                                                            "Min" : 6
+                                                        }
+                                                    },
+                                                    "Name" : "5",
+                                                    "Push" : {
+                                                        "LastMessageMs" : {
+                                                            "Count" : 1,
+                                                            "Sum" : 3946,
+                                                            "Max" : 3946,
+                                                            "Min" : 3946
+                                                        },
+                                                        "Rows" : {
+                                                            "Count" : 1,
+                                                            "Sum" : 2,
+                                                            "Max" : 2,
+                                                            "Min" : 2
+                                                        },
+                                                        "Chunks" : {
+                                                            "Count" : 1,
+                                                            "Sum" : 2,
+                                                            "Max" : 2,
+                                                            "Min" : 2
+                                                        },
+                                                        "ResumeMessageMs" : {
+                                                            "Count" : 1,
+                                                            "Sum" : 3946,
+                                                            "Max" : 3946,
+                                                            "Min" : 3946
+                                                        },
+                                                        "FirstMessageMs" : {
+                                                            "Count" : 1,
+                                                            "Sum" : 3946,
+                                                            "Max" : 3946,
+                                                            "Min" : 3946
+                                                        },
+                                                        "PauseMessageMs" : {
+                                                            "Count" : 1,
+                                                            "Sum" : 3942,
+                                                            "Max" : 3942,
+                                                            "Min" : 3942
+                                                        },
+                                                        "WaitTimeUs" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 7890574,
+                                                            "Max" : 3945343,
+                                                            "Min" : 3945231
+                                                        },
+                                                        "WaitPeriods" : {
+                                                            "Count" : 1,
+                                                            "Sum" : 1,
+                                                            "Max" : 1,
+                                                            "Min" : 1
+                                                        },
+                                                        "WaitMessageMs" : {
+                                                            "Count" : 1,
+                                                            "Max" : 3946,
+                                                            "Min" : 3942
+                                                        }
+                                                    }
+                                                }
+                                            ],
+                                            "MaxMemoryUsage" : {
+                                                "Count" : 2,
+                                                "Sum" : 4194304,
+                                                "Max" : 2097152,
+                                                "Min" : 2097152,
+                                                "History" : [
+                                                    1,
+                                                    4194304,
+                                                    3946,
+                                                    4194304
+                                                ]
+                                            },
+                                            "DurationUs" : {
+                                                "Count" : 1,
+                                                "Sum" : 5000,
+                                                "Max" : 5000,
+                                                "Min" : 5000
+                                            },
+                                            "InputBytes" : {
+                                                "Count" : 1,
+                                                "Sum" : 18,
+                                                "Max" : 18,
+                                                "Min" : 18
+                                            },
+                                            "Tasks" : 2,
+                                            "OutputRows" : {
+                                                "Count" : 1,
+                                                "Sum" : 2,
+                                                "Max" : 2,
+                                                "Min" : 2
+                                            },
+                                            "FinishedTasks" : 2,
+                                            "InputRows" : {
+                                                "Count" : 1,
+                                                "Sum" : 6,
+                                                "Max" : 6,
+                                                "Min" : 6
+                                            },
+                                            "PhysicalStageId" : 1,
+                                            "StageDurationUs" : 5000,
+                                            "BaseTimeMs" : 1753878531799,
+                                            "OutputBytes" : {
+                                                "Count" : 1,
+                                                "Sum" : 6,
+                                                "Max" : 6,
+                                                "Min" : 6
+                                            },
+                                            "CpuTimeUs" : {
+                                                "Count" : 2,
+                                                "Sum" : 198,
+                                                "Max" : 111,
+                                                "Min" : 87,
+                                                "History" : [
+                                                    1,
+                                                    105,
+                                                    1002,
+                                                    113,
+                                                    3010,
+                                                    113,
+                                                    3941,
+                                                    144,
+                                                    3946,
+                                                    198
+                                                ]
+                                            },
+                                            "UpdateTimeMs" : 3946,
+                                            "Input" : [
+                                                {
+                                                    "Pop" : {
+                                                        "Chunks" : {
+                                                            "Count" : 1,
+                                                            "Sum" : 3,
+                                                            "Max" : 3,
+                                                            "Min" : 3
+                                                        },
+                                                        "Rows" : {
+                                                            "Count" : 1,
+                                                            "Sum" : 6,
+                                                            "Max" : 6,
+                                                            "Min" : 6
+                                                        },
+                                                        "LastMessageMs" : {
+                                                            "Count" : 1,
+                                                            "Sum" : 3946,
+                                                            "Max" : 3946,
+                                                            "Min" : 3946
+                                                        },
+                                                        "ActiveMessageMs" : {
+                                                            "Count" : 1,
+                                                            "Max" : 3946,
+                                                            "Min" : 3941
+                                                        },
+                                                        "FirstMessageMs" : {
+                                                            "Count" : 1,
+                                                            "Sum" : 3941,
+                                                            "Max" : 3941,
+                                                            "Min" : 3941
+                                                        },
+                                                        "Bytes" : {
+                                                            "Count" : 1,
+                                                            "Sum" : 18,
+                                                            "Max" : 18,
+                                                            "Min" : 18
+                                                        },
+                                                        "ActiveTimeUs" : {
+                                                            "Count" : 1,
+                                                            "Sum" : 5000,
+                                                            "Max" : 5000,
+                                                            "Min" : 5000
+                                                        }
+                                                    },
+                                                    "Name" : "1",
+                                                    "Push" : {
+                                                        "Rows" : {
+                                                            "Count" : 1,
+                                                            "Sum" : 6,
+                                                            "Max" : 6,
+                                                            "Min" : 6
+                                                        },
+                                                        "LastMessageMs" : {
+                                                            "Count" : 1,
+                                                            "Sum" : 3946,
+                                                            "Max" : 3946,
+                                                            "Min" : 3946
+                                                        },
+                                                        "Chunks" : {
+                                                            "Count" : 1,
+                                                            "Sum" : 3,
+                                                            "Max" : 3,
+                                                            "Min" : 3
+                                                        },
+                                                        "ResumeMessageMs" : {
+                                                            "Count" : 1,
+                                                            "Sum" : 3946,
+                                                            "Max" : 3946,
+                                                            "Min" : 3946
+                                                        },
+                                                        "FirstMessageMs" : {
+                                                            "Count" : 1,
+                                                            "Sum" : 3941,
+                                                            "Max" : 3941,
+                                                            "Min" : 3941
+                                                        },
+                                                        "ActiveMessageMs" : {
+                                                            "Count" : 1,
+                                                            "Max" : 3946,
+                                                            "Min" : 3941
+                                                        },
+                                                        "Bytes" : {
+                                                            "Count" : 1,
+                                                            "Sum" : 18,
+                                                            "Max" : 18,
+                                                            "Min" : 18
+                                                        },
+                                                        "PauseMessageMs" : {
+                                                            "Count" : 1,
+                                                            "Sum" : 1,
+                                                            "Max" : 1,
+                                                            "Min" : 1
+                                                        },
+                                                        "ActiveTimeUs" : {
+                                                            "Count" : 1,
+                                                            "Sum" : 5000,
+                                                            "Max" : 5000,
+                                                            "Min" : 5000
+                                                        },
+                                                        "WaitTimeUs" : {
+                                                            "Count" : 2,
+                                                            "Sum" : 7884928,
+                                                            "Max" : 3942506,
+                                                            "Min" : 3942422
+                                                        },
+                                                        "WaitPeriods" : {
+                                                            "Count" : 1,
+                                                            "Sum" : 3,
+                                                            "Max" : 3,
+                                                            "Min" : 3
+                                                        },
+                                                        "WaitMessageMs" : {
+                                                            "Count" : 1,
+                                                            "Max" : 3946,
+                                                            "Min" : 1
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ],
+                                "Node Type" : "UnionAll",
+                                "PlanNodeType" : "Connection"
+                            }
+                        ],
+                        "Node Type" : "Collect",
+                        "Stats" : {
+                            "UseLlvm" : "undefined",
+                            "Output" : [
+                                {
+                                    "Pop" : {
+                                        "Chunks" : {
+                                            "Count" : 1,
+                                            "Sum" : 1,
+                                            "Max" : 1,
+                                            "Min" : 1
+                                        },
+                                        "Rows" : {
+                                            "Count" : 1,
+                                            "Sum" : 2,
+                                            "Max" : 2,
+                                            "Min" : 2
+                                        },
+                                        "LastMessageMs" : {
+                                            "Count" : 1,
+                                            "Sum" : 3946,
+                                            "Max" : 3946,
+                                            "Min" : 3946
+                                        },
+                                        "FirstMessageMs" : {
+                                            "Count" : 1,
+                                            "Sum" : 3946,
+                                            "Max" : 3946,
+                                            "Min" : 3946
+                                        },
+                                        "Bytes" : {
+                                            "Count" : 1,
+                                            "Sum" : 6,
+                                            "Max" : 6,
+                                            "Min" : 6,
+                                            "History" : [
+                                                3946,
+                                                6
+                                            ]
+                                        }
+                                    },
+                                    "Name" : "RESULT",
+                                    "Push" : {
+                                        "LastMessageMs" : {
+                                            "Count" : 1,
+                                            "Sum" : 3946,
+                                            "Max" : 3946,
+                                            "Min" : 3946
+                                        },
+                                        "Rows" : {
+                                            "Count" : 1,
+                                            "Sum" : 2,
+                                            "Max" : 2,
+                                            "Min" : 2
+                                        },
+                                        "Chunks" : {
+                                            "Count" : 1,
+                                            "Sum" : 2,
+                                            "Max" : 2,
+                                            "Min" : 2
+                                        },
+                                        "ResumeMessageMs" : {
+                                            "Count" : 1,
+                                            "Sum" : 3946,
+                                            "Max" : 3946,
+                                            "Min" : 3946
+                                        },
+                                        "FirstMessageMs" : {
+                                            "Count" : 1,
+                                            "Sum" : 3946,
+                                            "Max" : 3946,
+                                            "Min" : 3946
+                                        },
+                                        "PauseMessageMs" : {
+                                            "Count" : 1,
+                                            "Sum" : 3946,
+                                            "Max" : 3946,
+                                            "Min" : 3946
+                                        },
+                                        "WaitTimeUs" : {
+                                            "Count" : 1,
+                                            "Sum" : 3945561,
+                                            "Max" : 3945561,
+                                            "Min" : 3945561,
+                                            "History" : [
+                                                1002,
+                                                135,
+                                                3010,
+                                                135,
+                                                3946,
+                                                3945561
+                                            ]
+                                        },
+                                        "WaitPeriods" : {
+                                            "Count" : 1,
+                                            "Sum" : 1,
+                                            "Max" : 1,
+                                            "Min" : 1
+                                        }
+                                    }
+                                }
+                            ],
+                            "MaxMemoryUsage" : {
+                                "Count" : 1,
+                                "Sum" : 65536,
+                                "Max" : 65536,
+                                "Min" : 65536,
+                                "History" : [
+                                    1,
+                                    65536,
+                                    3946,
+                                    65536
+                                ]
+                            },
+                            "InputBytes" : {
+                                "Count" : 1,
+                                "Sum" : 6,
+                                "Max" : 6,
+                                "Min" : 6
+                            },
+                            "ResultRows" : {
+                                "Count" : 1,
+                                "Sum" : 2,
+                                "Max" : 2,
+                                "Min" : 2
+                            },
+                            "Tasks" : 1,
+                            "ResultBytes" : {
+                                "Count" : 1,
+                                "Sum" : 6,
+                                "Max" : 6,
+                                "Min" : 6
+                            },
+                            "OutputRows" : {
+                                "Count" : 1,
+                                "Sum" : 2,
+                                "Max" : 2,
+                                "Min" : 2
+                            },
+                            "FinishedTasks" : 1,
+                            "InputRows" : {
+                                "Count" : 1,
+                                "Sum" : 2,
+                                "Max" : 2,
+                                "Min" : 2
+                            },
+                            "PhysicalStageId" : 2,
+                            "StageDurationUs" : 0,
+                            "BaseTimeMs" : 1753878531799,
+                            "OutputBytes" : {
+                                "Count" : 1,
+                                "Sum" : 6,
+                                "Max" : 6,
+                                "Min" : 6
+                            },
+                            "CpuTimeUs" : {
+                                "Count" : 1,
+                                "Sum" : 55,
+                                "Max" : 55,
+                                "Min" : 55,
+                                "History" : [
+                                    1,
+                                    13,
+                                    1002,
+                                    15,
+                                    3010,
+                                    15,
+                                    3946,
+                                    55
+                                ]
+                            },
+                            "UpdateTimeMs" : 3946,
+                            "Input" : [
+                                {
+                                    "Pop" : {
+                                        "Chunks" : {
+                                            "Count" : 1,
+                                            "Sum" : 1,
+                                            "Max" : 1,
+                                            "Min" : 1
+                                        },
+                                        "Rows" : {
+                                            "Count" : 1,
+                                            "Sum" : 2,
+                                            "Max" : 2,
+                                            "Min" : 2
+                                        },
+                                        "LastMessageMs" : {
+                                            "Count" : 1,
+                                            "Sum" : 3946,
+                                            "Max" : 3946,
+                                            "Min" : 3946
+                                        },
+                                        "FirstMessageMs" : {
+                                            "Count" : 1,
+                                            "Sum" : 3946,
+                                            "Max" : 3946,
+                                            "Min" : 3946
+                                        },
+                                        "Bytes" : {
+                                            "Count" : 1,
+                                            "Sum" : 6,
+                                            "Max" : 6,
+                                            "Min" : 6
+                                        }
+                                    },
+                                    "Name" : "3",
+                                    "Push" : {
+                                        "LastMessageMs" : {
+                                            "Count" : 1,
+                                            "Sum" : 3946,
+                                            "Max" : 3946,
+                                            "Min" : 3946
+                                        },
+                                        "Rows" : {
+                                            "Count" : 1,
+                                            "Sum" : 2,
+                                            "Max" : 2,
+                                            "Min" : 2
+                                        },
+                                        "Chunks" : {
+                                            "Count" : 1,
+                                            "Sum" : 1,
+                                            "Max" : 1,
+                                            "Min" : 1
+                                        },
+                                        "ResumeMessageMs" : {
+                                            "Count" : 1,
+                                            "Sum" : 3946,
+                                            "Max" : 3946,
+                                            "Min" : 3946
+                                        },
+                                        "FirstMessageMs" : {
+                                            "Count" : 1,
+                                            "Sum" : 3946,
+                                            "Max" : 3946,
+                                            "Min" : 3946
+                                        },
+                                        "Bytes" : {
+                                            "Count" : 1,
+                                            "Sum" : 6,
+                                            "Max" : 6,
+                                            "Min" : 6
+                                        },
+                                        "PauseMessageMs" : {
+                                            "Count" : 1,
+                                            "Sum" : 3946,
+                                            "Max" : 3946,
+                                            "Min" : 3946
+                                        },
+                                        "WaitTimeUs" : {
+                                            "Count" : 1,
+                                            "Sum" : 3945472,
+                                            "Max" : 3945472,
+                                            "Min" : 3945472
+                                        },
+                                        "WaitPeriods" : {
+                                            "Count" : 1,
+                                            "Sum" : 1,
+                                            "Max" : 1,
+                                            "Min" : 1
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "Node Type" : "ResultSet",
+                "PlanNodeType" : "ResultSet"
+            }
+        ],
+        "Node Type" : "Query",
+        "Stats" : {
+            "Compilation" : {
+                "FromCache" : true,
+                "DurationUs" : 0,
+                "CpuTimeUs" : 0
+            },
+            "ProcessCpuTimeUs" : 106,
+            "TotalDurationUs" : 3950355,
+            "ResourcePoolId" : "default",
+            "QueuedTimeUs" : 0
+        },
+        "PlanNodeType" : "Query"
+    },
+    "meta" : {
+        "version" : "0.2",
+        "type" : "query"
+    },
+    "SimplifiedPlan" : {
+        "PlanNodeId" : 0,
+        "Plans" : [
+            {
+                "PlanNodeId" : 1,
+                "Plans" : [
+                    {
+                        "PlanNodeId" : 4,
+                        "Plans" : [
+                            {
+                                "PlanNodeId" : 5,
+                                "Plans" : [
+                                    {
+                                        "PlanNodeId" : 6,
+                                        "Plans" : [
+                                            {
+                                                "PlanNodeId" : 7,
+                                                "Operators" : [
+                                                    {
+                                                        "E-Size" : "0",
+                                                        "Name" : "TableFullScan",
+                                                        "A-Rows" : 6001215,
+                                                        "E-Rows" : "0",
+                                                        "Table" : "lineitem",
+                                                        "ReadColumns" : [
+                                                            "l_orderkey (-∞, +∞)",
+                                                            "l_linenumber (-∞, +∞)",
+                                                            "l_linestatus"
+                                                        ],
+                                                        "A-Size" : 78015795,
+                                                        "SsaProgram" : {
+                                                            "Command" : [
+                                                                {
+                                                                    "Projection" : {
+                                                                        "Columns" : [
+                                                                            {
+                                                                                "Id" : 6
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                }
+                                                            ]
+                                                        },
+                                                        "E-Cost" : "0"
+                                                    }
+                                                ],
+                                                "Node Type" : "TableFullScan"
+                                            }
+                                        ],
+                                        "Operators" : [
+                                            {
+                                                "GroupBy" : "item.l_linestatus",
+                                                "Aggregation" : "state",
+                                                "Name" : "Aggregate",
+                                                "A-SelfCpu" : 2872.757,
+                                                "A-Rows" : 6,
+                                                "A-Cpu" : 2872.757,
+                                                "Phase" : "Intermediate",
+                                                "A-Size" : 18
+                                            }
+                                        ],
+                                        "Node Type" : "Aggregate"
+                                    }
+                                ],
+                                "Node Type" : "HashShuffle (KeyColumns: [\"l_linestatus\"], HashFunc: \"HashV1\")",
+                                "PlanNodeType" : "Connection"
+                            }
+                        ],
+                        "Operators" : [
+                            {
+                                "A-Rows" : 2,
+                                "A-SelfCpu" : 0.111,
+                                "A-Cpu" : 2872.868,
+                                "A-Size" : 6,
+                                "Name" : "Aggregate",
+                                "Phase" : "Final"
+                            }
+                        ],
+                        "Node Type" : "Aggregate"
+                    }
+                ],
+                "Node Type" : "ResultSet",
+                "PlanNodeType" : "ResultSet"
+            }
+        ],
+        "Node Type" : "Query",
+        "PlanNodeType" : "Query"
+    }
+}

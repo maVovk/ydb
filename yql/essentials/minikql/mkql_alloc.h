@@ -7,12 +7,14 @@
 #include <yql/essentials/public/udf/sanitizer_utils.h>
 #include <yql/essentials/parser/pg_wrapper/interface/context.h>
 #include <yql/essentials/public/udf/udf_allocator.h>
+#include <yql/essentials/public/udf/udf_counter.h>
 #include <yql/essentials/public/udf/udf_value.h>
 
 #include <util/string/builder.h>
 #include <util/system/align.h>
 #include <util/system/defaults.h>
 #include <util/system/tls.h>
+#include <util/generic/guid.h>
 #include <util/generic/scope.h>
 
 #include <unordered_map>
@@ -109,6 +111,12 @@ struct TAllocState : public TAlignedPagePool
 
     bool UseRefLocking = false;
     std::unordered_map<void*, TLockInfo> LockedObjectsRefs;
+    // TODO: докинуть до JSON'а
+    std::unordered_map<TString, ssize_t> OperatorsAllocations;
+    std::unordered_map<TString, ssize_t> OperatorsMaxMemoryUsages;
+
+    TMaybe<TString, NMaybe::TPolicyUndefinedFail> OperatorGuid;
+    std::set<const void*> AllocatedPtrs;
 
     ::NKikimr::NUdf::TBoxedValueLink Root;
 
@@ -128,6 +136,52 @@ struct TAllocState : public TAlignedPagePool
 };
 
 extern Y_POD_THREAD(TAllocState*) TlsAllocState;
+
+struct TAllocStateGuard {
+    TAllocStateGuard(TGUID guid, NYql::NUdf::TCounter* bytesCounter, const TString& msg) : BytesCounter(bytesCounter) {
+        TStringBuilder logmsg;
+
+        auto prev = TlsAllocState->OperatorGuid.GetOrElse("nothing");
+        if (prev != "nothing") {
+            logmsg << "WARN! We've called operator inside operator\n";
+        }
+
+        TlsAllocState->OperatorGuid = guid.AsGuidString();
+
+        logmsg << "Initializing state guard: ";
+        logmsg << TlsAllocState->OperatorGuid.GetRef() << " -> " << msg << '\n';
+        std::cerr << logmsg;
+        std::cerr.flush();
+    }
+
+    void LogOperatorMemory(TAllocState* state) {
+        TStringBuilder logmsg;
+        logmsg << "{ ";
+        for (const auto& [operatorId, usedMem] : state->OperatorsAllocations) {
+            logmsg << operatorId << ": used=" << usedMem << "; max=" << state->OperatorsMaxMemoryUsages[operatorId];
+        }
+        logmsg << "}\n";
+
+        std::cerr << logmsg;
+        std::cerr.flush();
+    }
+
+    ~TAllocStateGuard() {
+        TMaybe<TString, NMaybe::TPolicyUndefinedFail> prev;
+        prev.Swap(TlsAllocState->OperatorGuid);
+
+        BytesCounter->Set(TlsAllocState->OperatorsMaxMemoryUsages[prev.GetRef()]);
+
+        TStringBuilder logmsg;
+        logmsg << "Destroing state guard: " << TlsAllocState->OperatorGuid.GetRef() << '\n';
+        std::cerr << logmsg;
+        std::cerr.flush();
+
+        LogOperatorMemory(TlsAllocState);
+    }
+
+    NYql::NUdf::TCounter* BytesCounter;
+};
 
 class TPAllocScope {
 public:
@@ -394,8 +448,20 @@ inline void* MKQLAllocFastWithSizeImpl(size_t sz, TAllocState* state, const EMem
 
 inline void* MKQLAllocFastWithSize(size_t sz, TAllocState* state, const EMemorySubPool mPool, const TAllocLocation& location = TAllocLocation::current()) {
     sz = NYql::NUdf::GetSizeToAlloc(sz);
+
+    auto& guid = state->OperatorGuid;
+    if (guid) {
+        state->OperatorsAllocations[guid.GetRef()] += sz;
+    }
+
     void* mem = MKQLAllocFastWithSizeImpl(sz, state, mPool, location);
-    return NYql::NUdf::WrapPointerWithRedZones(mem, sz);
+    auto ptr = NYql::NUdf::WrapPointerWithRedZones(mem, sz);
+
+    if (guid) {
+        state->AllocatedPtrs.insert(ptr);
+    }
+
+    return ptr;
 }
 
 void MKQLFreeSlow(TAllocPageHeader* header, TAllocState *state, const EMemorySubPool mPool) noexcept;
@@ -462,9 +528,39 @@ inline void MKQLFreeFastWithSizeImpl(const void* mem, size_t sz, TAllocState* st
     MKQLFreeSlow(header, state, mPool);
 }
 
-inline void MKQLFreeFastWithSize(const void* mem, size_t sz, TAllocState* state, const EMemorySubPool mPool) noexcept {
+inline void MKQLFreeFastWithSize(const void* mem, size_t sz, TAllocState* state, const EMemorySubPool mPool, const TAllocLocation& location = TAllocLocation::current()) noexcept {
     mem = NYql::NUdf::UnwrapPointerWithRedZones(mem, sz);
     sz = NYql::NUdf::GetSizeToAlloc(sz);
+
+    if (auto& guid = state->OperatorGuid; guid) {
+        auto& value = state->OperatorsAllocations[guid.GetRef()];
+
+        if (static_cast<size_t>(value) < sz) {
+            TStringBuilder logmsg;
+            logmsg << "Got negative mem usage";
+
+            if (state->AllocatedPtrs.contains(mem)) {
+                logmsg << ", void* mem is in AllocatedPtrs\n";
+            } else {
+                logmsg << ", void* mem is NOT in AllocatedPtrs\n";
+            }
+
+            std::cerr << logmsg;
+            std::cerr.flush();
+        }
+
+        if (!state->AllocatedPtrs.contains(mem)) {
+            TStringBuilder logmsg;
+            logmsg << "Free on uninitialized resource(?) " << location.file_name() << '(' << location.line() << ':' << location.column() << ") `" << location.function_name() << "`\n"; 
+            std::cerr << logmsg;
+            std::cerr.flush();
+        } else {
+            state->AllocatedPtrs.erase(mem);
+        }
+
+        value = Max(static_cast<long long>(value - sz), 0ll);  // TODO: понять почему без Max не работает
+    }
+
     return MKQLFreeFastWithSizeImpl(mem, sz, state, mPool);
 }
 

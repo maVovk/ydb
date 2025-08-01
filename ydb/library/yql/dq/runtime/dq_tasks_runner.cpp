@@ -268,7 +268,7 @@ public:
             logProviderFunc = [log=LogFunc](const NUdf::TStringRef& component, NUdf::ELogLevel level, const NUdf::TStringRef& message) {
                 log(TStringBuilder() << "[" << component << "][" << level << "]: " << message << "\n");
             };
-            ComputationLogProvider = NUdf::MakeLogProvider(std::move(logProviderFunc), NUdf::ELogLevel::Debug);
+            ComputationLogProvider = NUdf::MakeLogProvider(std::move(logProviderFunc), NUdf::ELogLevel::Warn);
         }
     }
 
@@ -798,6 +798,7 @@ public:
             Stats->OperatorStat.clear();
             for (auto& [_, opStat] : CountersProvider.OperatorStat) {
                 Stats->OperatorStat.push_back(opStat);
+                LOG(TStringBuilder() << "Got operator stat with Bytes=" << opStat.Bytes);
             }
         }
 

@@ -32,6 +32,8 @@ NYql::NUdf::TCounter TDqTaskCountersProvider::GetCounter(const NUdf::TStringRef&
 
     if (name == NKikimr::NMiniKQL::Counter_OutputRows) {
         return NYql::NUdf::TCounter(&opStat->Rows);
+    } else if (name == NKikimr::NMiniKQL::Counter_OutputBytes) {
+        return NYql::NUdf::TCounter(&opStat->Bytes);
     }
 
     return NYql::NUdf::TCounter();
