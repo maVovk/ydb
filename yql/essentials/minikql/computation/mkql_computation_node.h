@@ -158,9 +158,17 @@ public:
     typedef TIntrusivePtr<IComputationNode> TPtr;
     typedef std::map<ui32, EValueRepresentation> TIndexesMap;
 
-    TMaybe<TGUID, NMaybe::TPolicyUndefinedFail> NodeGUID;
+    TOperatorId OperatorId = TOperatorId();
 
-    virtual ~IComputationNode() {}
+    virtual ~IComputationNode() {
+        if (OperatorId) {
+            Y_DEBUG_ABORT_UNLESS(TlsAllocState);
+
+            if (TlsAllocState->TrackOperatorStats && TlsAllocState->OperatorsMemoryStats.contains(OperatorId)) {
+                TlsAllocState->OperatorsMemoryStats.erase(OperatorId);
+            }
+        }
+    }
 
     virtual void InitNode(TComputationContext&) const = 0;
 

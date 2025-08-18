@@ -700,7 +700,11 @@ private:
     }
 
     EFetchResult FetchAndPackData(TComputationContext& ctx, NUdf::TUnboxedValue*const* output) {
-        const NKikimr::NMiniKQL::EFetchResult resultLeft = FlowLeft->FetchValues(ctx, LeftPacker->TuplePtrs.data());
+        NKikimr::NMiniKQL::EFetchResult resultLeft;
+        {
+            auto operatorUnguard = TOperatorUnguard();
+            resultLeft = FlowLeft->FetchValues(ctx, LeftPacker->TuplePtrs.data());
+        }
         NKikimr::NMiniKQL::EFetchResult resultRight;
 
         if (resultLeft == EFetchResult::One) {
@@ -741,6 +745,7 @@ private:
                 std::copy_n(LeftPacker->TupleHolder.begin(), LeftPacker->TotalColumnsNum, RightPacker->TupleHolder.begin());
             }
         } else {
+            auto operatorUnguard = TOperatorUnguard();
             resultRight = FlowRight->FetchValues(ctx, RightPacker->TuplePtrs.data());
         }
 
@@ -876,7 +881,7 @@ private:
                 break;
             }
 
-            auto isYield = FetchAndPackData(ctx, output);
+            EFetchResult isYield = FetchAndPackData(ctx, output);
             if (IsEarlyExitDueToEmptyInput) {
                 *HaveMoreLeftRows = false;
                 *HaveMoreRightRows = false;
@@ -972,7 +977,8 @@ EFetchResult DoCalculateWithSpilling(TComputationContext& ctx, NUdf::TUnboxedVal
                 if (isWaitingForReduce) return EFetchResult::Yield;
             }
         }
-        auto isYield = FetchAndPackData(ctx, output);
+
+        EFetchResult isYield = FetchAndPackData(ctx, output);
         if (isYield != EFetchResult::Finish) return isYield;
     }
 
@@ -1099,7 +1105,7 @@ class TGraceJoinWrapper : public TStatefulWideFlowCodegeneratorNode<TGraceJoinWr
         EJoinKind joinKind, EAnyJoinSettings anyJoinSettings,  std::vector<ui32>&& leftKeyColumns, std::vector<ui32>&& rightKeyColumns,
         std::vector<ui32>&& leftRenames, std::vector<ui32>&& rightRenames,
         std::vector<TType*>&& leftColumnsTypes, std::vector<TType*>&& rightColumnsTypes,
-        std::vector<EValueRepresentation>&& outputRepresentations, bool isSelfJoin, bool isSpillingAllowed)
+        std::vector<EValueRepresentation>&& outputRepresentations, bool isSelfJoin, bool isSpillingAllowed, TOperatorId operatorId)
             : TBaseComputation(mutables, nullptr, EValueRepresentation::Boxed)
             , FlowLeft(flowLeft)
             , FlowRight(flowRight)
@@ -1114,12 +1120,16 @@ class TGraceJoinWrapper : public TStatefulWideFlowCodegeneratorNode<TGraceJoinWr
             , OutputRepresentations(std::move(outputRepresentations))
             , IsSelfJoin_(isSelfJoin)
             , IsSpillingAllowed(isSpillingAllowed)
-        {}
+            {
+                this->OperatorId = operatorId;
+            }
 
         EFetchResult DoCalculate(NUdf::TUnboxedValue& state, TComputationContext& ctx, NUdf::TUnboxedValue*const* output)  const {
             if (state.IsInvalid()) {
                 MakeSpillingSupportState(ctx, state);
             }
+            auto operatorGuard = TOperatorGuard(this->OperatorId, &CounterPeakBytes_);
+            // USER_LOG("Created Join operator in DoCalculate " << this->OperatorId);
 
             return static_cast<TGraceJoinSpillingSupportState*>(state.AsBoxed().Get())->FetchValues(ctx, output);
         }
@@ -1201,6 +1211,10 @@ class TGraceJoinWrapper : public TStatefulWideFlowCodegeneratorNode<TGraceJoinWr
 
         return {result, std::move(getters)};
     }
+
+    // ~TGraceJoinWrapper() {
+    //     USER_LOG("Destroying GraceJoinWrapper");
+    // }
 #endif
     private:
         void RegisterDependencies() const final {
@@ -1211,6 +1225,11 @@ class TGraceJoinWrapper : public TStatefulWideFlowCodegeneratorNode<TGraceJoinWr
             NYql::NUdf::TLoggerPtr logger = ctx.MakeLogger();
             NYql::NUdf::TLogComponentId logComponent = logger->RegisterComponent("GraceJoin");
             UDF_LOG(logger, logComponent, NUdf::ELogLevel::Debug, TStringBuilder() << "State initialized");
+
+            if (ctx.CountersProvider) {
+                TString id = TString(Operator_Join) + "0";
+                CounterPeakBytes_ = ctx.CountersProvider->GetCounter(id, Counter_PeakBytes, false);
+            }
 
             state = ctx.HolderFactory.Create<TGraceJoinSpillingSupportState>(
                 FlowLeft, FlowRight, JoinKind, AnyJoinSettings_, LeftKeyColumns, RightKeyColumns,
@@ -1231,11 +1250,16 @@ class TGraceJoinWrapper : public TStatefulWideFlowCodegeneratorNode<TGraceJoinWr
         const std::vector<EValueRepresentation> OutputRepresentations;
         const bool IsSelfJoin_;
         const bool IsSpillingAllowed;
+        mutable NYql::NUdf::TCounter CounterPeakBytes_;
 };
 
 }
 
 IComputationNode* WrapGraceJoinCommon(TCallable& callable, const TComputationNodeFactoryContext& ctx, bool isSelfJoin, bool isSpillingAllowed) {
+    TOperatorId operatorId = static_cast<void*>(&callable);
+    USER_LOG("Created Join operator in Wrapper " << operatorId);
+    auto operatorGuard = TOperatorGuard(operatorId);
+
     const auto leftFlowNodeIndex = 0;
     const auto rightFlowNodeIndex = 1;
     const auto joinKindNodeIndex = isSelfJoin ? 1 : 2;
@@ -1308,7 +1332,7 @@ IComputationNode* WrapGraceJoinCommon(TCallable& callable, const TComputationNod
     return new TGraceJoinWrapper(
         ctx.Mutables, flowLeft, flowRight, GetJoinKind(rawJoinKind), anyJoinSettings,
         std::move(leftKeyColumns), std::move(rightKeyColumns), std::move(leftRenames), std::move(rightRenames),
-        std::move(leftColumnsTypes), std::move(rightColumnsTypes), std::move(outputRepresentations), isSelfJoin, isSpillingAllowed);
+        std::move(leftColumnsTypes), std::move(rightColumnsTypes), std::move(outputRepresentations), isSelfJoin, isSpillingAllowed, operatorId);
 }
 
 IComputationNode* WrapGraceJoin(TCallable& callable, const TComputationNodeFactoryContext& ctx) {

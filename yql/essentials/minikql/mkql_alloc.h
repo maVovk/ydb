@@ -14,7 +14,6 @@
 #include <util/system/align.h>
 #include <util/system/defaults.h>
 #include <util/system/tls.h>
-#include <util/generic/guid.h>
 #include <util/generic/scope.h>
 
 #include <unordered_map>
@@ -49,6 +48,15 @@ static_assert(sizeof(TAllocPageHeader) % MKQL_ALIGNMENT == 0, "Incorrect size of
 
 struct TMkqlArrowHeader;
 
+#define USER_LOG(message) \
+    do { \
+        TStringBuilder logmsg; \
+        logmsg << message << '\n'; \
+        std::cout << logmsg; \
+        std::cout.flush(); \
+    } while(0)
+
+
 #ifndef NDEBUG
 using TAllocLocation = std::source_location;
 #else
@@ -67,6 +75,8 @@ struct TAllocLocation
     }
 };
 #endif
+
+using TOperatorId = void*;
 
 struct TAllocState : public TAlignedPagePool
 {
@@ -111,12 +121,10 @@ struct TAllocState : public TAlignedPagePool
 
     bool UseRefLocking = false;
     std::unordered_map<void*, TLockInfo> LockedObjectsRefs;
-    // TODO: докинуть до JSON'а
-    std::unordered_map<TString, ssize_t> OperatorsAllocations;
-    std::unordered_map<TString, ssize_t> OperatorsMaxMemoryUsages;
 
-    TMaybe<TString, NMaybe::TPolicyUndefinedFail> OperatorGuid;
-    std::set<const void*> AllocatedPtrs;
+    bool TrackOperatorStats = true;
+    std::unordered_map<TOperatorId, std::pair<ssize_t, std::pair<ssize_t, ssize_t>>> OperatorsMemoryStats;  // first number is current usage, second - peak usage
+    TMaybe<TOperatorId> OperatorAddr;  // ABA problem shouldn't arise, address is binded to operator's lifetime and after deconstruction stats are erased
 
     ::NKikimr::NUdf::TBoxedValueLink Root;
 
@@ -133,54 +141,82 @@ struct TAllocState : public TAlignedPagePool
 
     void LockObject(::NKikimr::NUdf::TUnboxedValuePod value);
     void UnlockObject(::NKikimr::NUdf::TUnboxedValuePod value);
+
+    ~TAllocState() {
+        if (!OperatorsMemoryStats.empty()) {
+            for (const auto& [operatorId, stats] : OperatorsMemoryStats) {
+                USER_LOG("OperatorsMemoryStat: " << operatorId << ": cur usage=" << stats.first << ", min usage=" << stats.second.first << ", max usage=" << stats.second.second);
+            }
+        }
+    }
 };
 
 extern Y_POD_THREAD(TAllocState*) TlsAllocState;
 
-struct TAllocStateGuard {
-    TAllocStateGuard(TGUID guid, NYql::NUdf::TCounter* bytesCounter, const TString& msg) : BytesCounter(bytesCounter) {
-        TStringBuilder logmsg;
+struct TOperatorGuard {
+    TOperatorGuard(TOperatorId addr, NYql::NUdf::TCounter* bytesCounter=nullptr) : BytesCounter_(bytesCounter) {
+        Y_DEBUG_ABORT_UNLESS(TlsAllocState);
 
-        auto prev = TlsAllocState->OperatorGuid.GetOrElse("nothing");
-        if (prev != "nothing") {
-            logmsg << "WARN! We've called operator inside operator\n";
+        if (!TlsAllocState->TrackOperatorStats) {
+            return;
         }
 
-        TlsAllocState->OperatorGuid = guid.AsGuidString();
-
-        logmsg << "Initializing state guard: ";
-        logmsg << TlsAllocState->OperatorGuid.GetRef() << " -> " << msg << '\n';
-        std::cerr << logmsg;
-        std::cerr.flush();
-    }
-
-    void LogOperatorMemory(TAllocState* state) {
-        TStringBuilder logmsg;
-        logmsg << "{ ";
-        for (const auto& [operatorId, usedMem] : state->OperatorsAllocations) {
-            logmsg << operatorId << ": used=" << usedMem << "; max=" << state->OperatorsMaxMemoryUsages[operatorId];
+        if (TlsAllocState->OperatorAddr && TlsAllocState->OperatorAddr != addr) {
+            Y_DEBUG_ABORT("Operator called from unguarded state");
         }
-        logmsg << "}\n";
 
-        std::cerr << logmsg;
-        std::cerr.flush();
+        TlsAllocState->OperatorAddr = addr;
+        if (!TlsAllocState->OperatorsMemoryStats.contains(addr)) {
+            TlsAllocState->OperatorsMemoryStats[addr] = {0, {0, 0}};
+        }
     }
 
-    ~TAllocStateGuard() {
-        TMaybe<TString, NMaybe::TPolicyUndefinedFail> prev;
-        prev.Swap(TlsAllocState->OperatorGuid);
+    ~TOperatorGuard() {
+        if (!TlsAllocState->TrackOperatorStats || !TlsAllocState->OperatorAddr) {
+            return;
+        }
 
-        BytesCounter->Set(TlsAllocState->OperatorsMaxMemoryUsages[prev.GetRef()]);
+        auto& addr = TlsAllocState->OperatorAddr.GetRef();
+        auto& [_, peak] = TlsAllocState->OperatorsMemoryStats[addr];
 
-        TStringBuilder logmsg;
-        logmsg << "Destroing state guard: " << TlsAllocState->OperatorGuid.GetRef() << '\n';
-        std::cerr << logmsg;
-        std::cerr.flush();
+        // USER_LOG("Destroying operator guard " << addr << " with usage=" << usage << ", min usage=" << peak.first << ", max usage=" << peak.second);
 
-        LogOperatorMemory(TlsAllocState);
+        if (BytesCounter_) {
+            BytesCounter_->Set(peak.second);
+        }
+
+        TlsAllocState->OperatorAddr.Clear();
     }
 
-    NYql::NUdf::TCounter* BytesCounter;
+private:
+    NYql::NUdf::TCounter* BytesCounter_;
+    TMaybe<TOperatorId> Holder_;
+};
+
+struct TOperatorUnguard {
+    TOperatorUnguard() {
+        Y_DEBUG_ABORT_UNLESS(TlsAllocState);
+
+        if (!TlsAllocState->TrackOperatorStats) {
+            return;
+        }
+
+        if (TlsAllocState->OperatorAddr) {
+            Swap(TlsAllocState->OperatorAddr, Holder_);
+            TlsAllocState->OperatorAddr.Clear();
+        }
+    }
+
+    ~TOperatorUnguard() {
+        if (!TlsAllocState->TrackOperatorStats) {
+            return;
+        }
+
+        Swap(TlsAllocState->OperatorAddr, Holder_);
+        Holder_.Clear();
+    }
+private:
+    TMaybe<TOperatorId> Holder_;
 };
 
 class TPAllocScope {
@@ -448,20 +484,17 @@ inline void* MKQLAllocFastWithSizeImpl(size_t sz, TAllocState* state, const EMem
 
 inline void* MKQLAllocFastWithSize(size_t sz, TAllocState* state, const EMemorySubPool mPool, const TAllocLocation& location = TAllocLocation::current()) {
     sz = NYql::NUdf::GetSizeToAlloc(sz);
-
-    auto& guid = state->OperatorGuid;
-    if (guid) {
-        state->OperatorsAllocations[guid.GetRef()] += sz;
-    }
-
     void* mem = MKQLAllocFastWithSizeImpl(sz, state, mPool, location);
-    auto ptr = NYql::NUdf::WrapPointerWithRedZones(mem, sz);
 
-    if (guid) {
-        state->AllocatedPtrs.insert(ptr);
+    if (state->TrackOperatorStats) {
+        if (auto& addr = state->OperatorAddr) {
+            auto& [usage, peak] = state->OperatorsMemoryStats[addr.GetRef()];
+            usage += sz;
+            peak.second = Max(usage, peak.second);
+        }
     }
 
-    return ptr;
+    return NYql::NUdf::WrapPointerWithRedZones(mem, sz);
 }
 
 void MKQLFreeSlow(TAllocPageHeader* header, TAllocState *state, const EMemorySubPool mPool) noexcept;
@@ -528,37 +561,16 @@ inline void MKQLFreeFastWithSizeImpl(const void* mem, size_t sz, TAllocState* st
     MKQLFreeSlow(header, state, mPool);
 }
 
-inline void MKQLFreeFastWithSize(const void* mem, size_t sz, TAllocState* state, const EMemorySubPool mPool, const TAllocLocation& location = TAllocLocation::current()) noexcept {
+inline void MKQLFreeFastWithSize(const void* mem, size_t sz, TAllocState* state, const EMemorySubPool mPool) noexcept {
     mem = NYql::NUdf::UnwrapPointerWithRedZones(mem, sz);
     sz = NYql::NUdf::GetSizeToAlloc(sz);
 
-    if (auto& guid = state->OperatorGuid; guid) {
-        auto& value = state->OperatorsAllocations[guid.GetRef()];
-
-        if (static_cast<size_t>(value) < sz) {
-            TStringBuilder logmsg;
-            logmsg << "Got negative mem usage";
-
-            if (state->AllocatedPtrs.contains(mem)) {
-                logmsg << ", void* mem is in AllocatedPtrs\n";
-            } else {
-                logmsg << ", void* mem is NOT in AllocatedPtrs\n";
-            }
-
-            std::cerr << logmsg;
-            std::cerr.flush();
+    if (state->TrackOperatorStats) {
+        if (auto& addr = state->OperatorAddr) {
+            auto& [usage, peak] = state->OperatorsMemoryStats[addr.GetRef()];
+            usage -= sz;
+            peak.first = Min(usage, peak.first);
         }
-
-        if (!state->AllocatedPtrs.contains(mem)) {
-            TStringBuilder logmsg;
-            logmsg << "Free on uninitialized resource(?) " << location.file_name() << '(' << location.line() << ':' << location.column() << ") `" << location.function_name() << "`\n"; 
-            std::cerr << logmsg;
-            std::cerr.flush();
-        } else {
-            state->AllocatedPtrs.erase(mem);
-        }
-
-        value = Max(static_cast<long long>(value - sz), 0ll);  // TODO: понять почему без Max не работает
     }
 
     return MKQLFreeFastWithSizeImpl(mem, sz, state, mPool);
