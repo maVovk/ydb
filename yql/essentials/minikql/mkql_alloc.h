@@ -56,7 +56,6 @@ struct TMkqlArrowHeader;
         std::cout.flush(); \
     } while(0)
 
-
 #ifndef NDEBUG
 using TAllocLocation = std::source_location;
 #else
@@ -122,7 +121,6 @@ struct TAllocState : public TAlignedPagePool
     bool UseRefLocking = false;
     std::unordered_map<void*, TLockInfo> LockedObjectsRefs;
 
-    bool TrackOperatorStats = true;
     std::unordered_map<TOperatorId, std::pair<ssize_t, std::pair<ssize_t, ssize_t>>> OperatorsMemoryStats;  // first number is current usage, second - peak usage
     TMaybe<TOperatorId> OperatorAddr;  // ABA problem shouldn't arise, address is binded to operator's lifetime and after deconstruction stats are erased
 
@@ -153,40 +151,13 @@ struct TAllocState : public TAlignedPagePool
 
 extern Y_POD_THREAD(TAllocState*) TlsAllocState;
 
+void EnableOperatorsStatsTracking();
+bool IsOperatorsStatsTracked();
+
 struct TOperatorGuard {
-    TOperatorGuard(TOperatorId addr, NYql::NUdf::TCounter* bytesCounter=nullptr) : BytesCounter_(bytesCounter) {
-        Y_DEBUG_ABORT_UNLESS(TlsAllocState);
+    TOperatorGuard(TOperatorId addr, NYql::NUdf::TCounter* bytesCounter=nullptr);
 
-        if (!TlsAllocState->TrackOperatorStats) {
-            return;
-        }
-
-        if (TlsAllocState->OperatorAddr && TlsAllocState->OperatorAddr != addr) {
-            Y_DEBUG_ABORT("Operator called from unguarded state");
-        }
-
-        TlsAllocState->OperatorAddr = addr;
-        if (!TlsAllocState->OperatorsMemoryStats.contains(addr)) {
-            TlsAllocState->OperatorsMemoryStats[addr] = {0, {0, 0}};
-        }
-    }
-
-    ~TOperatorGuard() {
-        if (!TlsAllocState->TrackOperatorStats || !TlsAllocState->OperatorAddr) {
-            return;
-        }
-
-        auto& addr = TlsAllocState->OperatorAddr.GetRef();
-        auto& [_, peak] = TlsAllocState->OperatorsMemoryStats[addr];
-
-        // USER_LOG("Destroying operator guard " << addr << " with usage=" << usage << ", min usage=" << peak.first << ", max usage=" << peak.second);
-
-        if (BytesCounter_) {
-            BytesCounter_->Set(peak.second);
-        }
-
-        TlsAllocState->OperatorAddr.Clear();
-    }
+    ~TOperatorGuard();
 
 private:
     NYql::NUdf::TCounter* BytesCounter_;
@@ -194,27 +165,10 @@ private:
 };
 
 struct TOperatorUnguard {
-    TOperatorUnguard() {
-        Y_DEBUG_ABORT_UNLESS(TlsAllocState);
+    TOperatorUnguard();
 
-        if (!TlsAllocState->TrackOperatorStats) {
-            return;
-        }
+    ~TOperatorUnguard();
 
-        if (TlsAllocState->OperatorAddr) {
-            Swap(TlsAllocState->OperatorAddr, Holder_);
-            TlsAllocState->OperatorAddr.Clear();
-        }
-    }
-
-    ~TOperatorUnguard() {
-        if (!TlsAllocState->TrackOperatorStats) {
-            return;
-        }
-
-        Swap(TlsAllocState->OperatorAddr, Holder_);
-        Holder_.Clear();
-    }
 private:
     TMaybe<TOperatorId> Holder_;
 };
@@ -486,7 +440,7 @@ inline void* MKQLAllocFastWithSize(size_t sz, TAllocState* state, const EMemoryS
     sz = NYql::NUdf::GetSizeToAlloc(sz);
     void* mem = MKQLAllocFastWithSizeImpl(sz, state, mPool, location);
 
-    if (state->TrackOperatorStats) {
+    if (IsOperatorsStatsTracked()) {
         if (auto& addr = state->OperatorAddr) {
             auto& [usage, peak] = state->OperatorsMemoryStats[addr.GetRef()];
             usage += sz;
@@ -565,7 +519,7 @@ inline void MKQLFreeFastWithSize(const void* mem, size_t sz, TAllocState* state,
     mem = NYql::NUdf::UnwrapPointerWithRedZones(mem, sz);
     sz = NYql::NUdf::GetSizeToAlloc(sz);
 
-    if (state->TrackOperatorStats) {
+    if (IsOperatorsStatsTracked()) {
         if (auto& addr = state->OperatorAddr) {
             auto& [usage, peak] = state->OperatorsMemoryStats[addr.GetRef()];
             usage -= sz;

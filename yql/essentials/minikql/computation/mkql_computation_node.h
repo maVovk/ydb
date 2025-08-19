@@ -161,11 +161,11 @@ public:
     TOperatorId OperatorId = TOperatorId();
 
     virtual ~IComputationNode() {
-        if (OperatorId) {
+        if (IsOperatorsStatsTracked() && OperatorId) {
             Y_DEBUG_ABORT_UNLESS(TlsAllocState);
 
-            if (TlsAllocState->TrackOperatorStats && TlsAllocState->OperatorsMemoryStats.contains(OperatorId)) {
-                TlsAllocState->OperatorsMemoryStats.erase(OperatorId);
+            if (auto iter = TlsAllocState->OperatorsMemoryStats.find(OperatorId); iter != TlsAllocState->OperatorsMemoryStats.end()) {
+                TlsAllocState->OperatorsMemoryStats.erase(iter);
             }
         }
     }

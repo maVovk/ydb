@@ -15,7 +15,69 @@ static ui8 ZeroSizeObject alignas(ArrowAlignment)[0];
 
 constexpr ui64 ArrowSizeForArena = (TAllocState::POOL_PAGE_SIZE >> 2);
 
+static bool IsOperatorStatsTrackingEnabled = true;
+
+void EnableOperatorsStatsTracking() {
+    IsOperatorStatsTrackingEnabled = true;
+}
+
+bool IsOperatorsStatsTracked() {
+    return IsOperatorStatsTrackingEnabled;
+}
+
 Y_POD_THREAD(TAllocState*) TlsAllocState;
+
+TOperatorGuard::TOperatorGuard(TOperatorId addr, NYql::NUdf::TCounter* bytesCounter) : BytesCounter_(bytesCounter) {
+    Y_DEBUG_ABORT_UNLESS(TlsAllocState);
+
+    if (!IsOperatorStatsTrackingEnabled) {
+        return;
+    }
+
+    if (TlsAllocState->OperatorAddr && TlsAllocState->OperatorAddr != addr) {
+        Y_DEBUG_ABORT("Operator called from unguarded state");
+    }
+
+    TlsAllocState->OperatorAddr = addr;
+    if (!TlsAllocState->OperatorsMemoryStats.contains(addr)) {
+        TlsAllocState->OperatorsMemoryStats[addr] = {0, {0, 0}};
+    }
+}
+
+TOperatorGuard::~TOperatorGuard() {
+    if (!IsOperatorStatsTrackingEnabled || !TlsAllocState->OperatorAddr) {
+        return;
+    }
+
+    auto& addr = TlsAllocState->OperatorAddr.GetRef();
+    if (BytesCounter_) {
+        BytesCounter_->Set(TlsAllocState->OperatorsMemoryStats[addr].second.second);
+    }
+
+    TlsAllocState->OperatorAddr.Clear();
+}
+
+TOperatorUnguard::TOperatorUnguard() {
+    Y_DEBUG_ABORT_UNLESS(TlsAllocState);
+
+        if (!IsOperatorStatsTrackingEnabled) {
+            return;
+        }
+
+        if (TlsAllocState->OperatorAddr) {
+            Swap(TlsAllocState->OperatorAddr, Holder_);
+            TlsAllocState->OperatorAddr.Clear();
+        }
+    }
+
+TOperatorUnguard::~TOperatorUnguard() {
+    if (!IsOperatorStatsTrackingEnabled) {
+        return;
+    }
+
+    Swap(TlsAllocState->OperatorAddr, Holder_);
+    Holder_.Clear();
+}
 
 TAllocPageHeader TAllocState::EmptyPageHeader = { 0, 0, 0, 0, nullptr, nullptr };
 TAllocState::TCurrentPages TAllocState::EmptyCurrentPages = { &TAllocState::EmptyPageHeader, &TAllocState::EmptyPageHeader };

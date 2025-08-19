@@ -1129,7 +1129,6 @@ class TGraceJoinWrapper : public TStatefulWideFlowCodegeneratorNode<TGraceJoinWr
                 MakeSpillingSupportState(ctx, state);
             }
             auto operatorGuard = TOperatorGuard(this->OperatorId, &CounterPeakBytes_);
-            // USER_LOG("Created Join operator in DoCalculate " << this->OperatorId);
 
             return static_cast<TGraceJoinSpillingSupportState*>(state.AsBoxed().Get())->FetchValues(ctx, output);
         }
@@ -1211,10 +1210,6 @@ class TGraceJoinWrapper : public TStatefulWideFlowCodegeneratorNode<TGraceJoinWr
 
         return {result, std::move(getters)};
     }
-
-    // ~TGraceJoinWrapper() {
-    //     USER_LOG("Destroying GraceJoinWrapper");
-    // }
 #endif
     private:
         void RegisterDependencies() const final {
