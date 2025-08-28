@@ -8,6 +8,7 @@ namespace NKikimr {
 
 namespace NCHash {
 
+#if !defined(PROFILE_MEMORY_ALLOCATIONS)
 void TListPoolBase::FreeListPage(TListHeader* p) {
     Y_ASSERT(TAlignedPagePool::GetPageStart(p) == p);
     p->~TListHeader();
@@ -57,6 +58,7 @@ TString TListPoolBase::TUsedPages::DebugInfo() const {
     }
     return out.Str();
 }
+#endif
 
 } // NCHash
 

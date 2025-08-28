@@ -13,7 +13,7 @@ using namespace NKikimr;
 using namespace NKikimr::NCHash;
 
 Y_UNIT_TEST_SUITE(TCompactHashTest) {
-
+#if !defined(PROFILE_MEMORY_ALLOCATIONS)
     template <typename TItem>
     void TestListPoolPagesImpl(size_t listSize, ui16 countOfLists, size_t expectedListCapacity, ui32 expectedMark) {
         using TPool = TListPool<TItem>;
@@ -140,6 +140,7 @@ Y_UNIT_TEST_SUITE(TCompactHashTest) {
     Y_UNIT_TEST(TestListPoolLargPagesObj) {
         TestListPoolLargeImpl<TItem>();
     }
+#endif
 
     struct TItemHash {
         template <typename T>

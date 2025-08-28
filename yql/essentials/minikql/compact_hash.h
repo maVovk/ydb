@@ -30,6 +30,21 @@ namespace NKikimr {
 
 namespace NCHash {
 
+#if defined (PROFILE_MEMORY_ALLOCATIONS)
+class TListPoolBase {
+public:
+    template <typename T>
+    static inline constexpr ui16 GetSmallPageCapacity(size_t listSize) {
+        // Always keep at least ui16 per list in order to track collection free lists
+        return static_cast<ui16>(TAlignedPagePool::POOL_PAGE_SIZE / (AlignUp<size_t>(listSize * sizeof(T), sizeof(ui16)))) & 0x7FFF;
+    }
+
+    template <typename T>
+    static inline constexpr ui32 GetLargePageCapacity() {
+        return static_cast<ui32>(TAlignedPagePool::POOL_PAGE_SIZE / sizeof(T));
+    }
+};
+#else
 class TListPoolBase {
 public:
     enum {
@@ -802,6 +817,7 @@ struct TNode {
         Flag = FlagEmpty;
     }
 };
+#endif
 
 template <typename TKey, typename TValue>
 struct TKeyValuePair {
@@ -845,6 +861,7 @@ struct TKeyValuePair {
     TValue second; // NOLINT(readability-identifier-naming)
 };
 
+#if !defined(PROFILE_MEMORY_ALLOCATIONS)
 template <typename TKey, typename TValue>
 using TKeyNodePair = TKeyValuePair<TKey, TNode<TValue>>;
 
@@ -1461,6 +1478,322 @@ protected:
     TKeyHash KeyHash_;
     TKeyEqual KeyEqual_;
 };
+#else
+template <typename TItemType,
+          typename TKeyType,
+          typename TKeyExtractor,
+          typename TKeyHash,
+          typename TKeyEqual,
+          typename TSubItemType = TItemType,
+          bool IsMultiContainer = false
+          >
+class TCompactHashBase {
+protected:
+    using TContainer = std::unordered_multimap<TKeyType, TItemType, TKeyHash, TKeyEqual>;
+
+public:
+    template <typename T, bool MultiContainer>
+    class TIteratorImpl {
+        friend class TCompactHashBase;
+        using TContainerIter = typename TContainer::const_iterator;
+
+        TIteratorImpl(const TCompactHashBase* hash)
+            : Hash_(hash), Iter_(hash->Container_.begin()), Timestamp_(hash->Timestamp_) {
+        }
+
+        TIteratorImpl(const TCompactHashBase* hash, TContainerIter it)
+            : Hash_(hash), Iter_(it), Timestamp_(hash->Timestamp_) {
+        }
+
+        TIteratorImpl(const TCompactHashBase* hash, TContainerIter it, TContainerIter /**/)
+            : Hash_(hash), Iter_(it), Timestamp_(hash->Timestamp_) {
+        }
+
+        TIteratorImpl() = default;
+    public:
+        bool Ok() const {
+            if (!Hash_ || Timestamp_ != Hash_->Timestamp_) {
+                return false;
+            }
+            return Iter_ != Hash_->Container_.end();
+        }
+
+        T Get() const {
+            return GetItem();
+        }
+
+        T operator*() const {
+            return GetItem();
+        }
+
+        TIteratorImpl& operator++() {
+            Y_ASSERT(Ok());
+            ++Iter_;
+            return *this;
+        }
+
+        void Set(const T& value) {
+            Y_ASSERT(Ok());
+            const_cast<T&>(Iter_->second) = value;
+        }
+    private:
+        T GetItem() const {
+            Y_ASSERT(Ok());
+            return Iter_->second;
+        }
+
+        const TCompactHashBase* Hash_ = nullptr;
+        TContainerIter Iter_ = TContainerIter();
+        ui8 Timestamp_ = 0;
+    };
+
+    template <typename T>
+    class TIteratorImpl<TKeyValuePair<TKeyType, T>, true> {
+        friend class TCompactHashBase;
+        using TContainerIter = typename TContainer::const_iterator;
+        using TContainerLocalIter = typename TContainer::const_local_iterator;
+
+        TIteratorImpl(const TCompactHashBase* hash)
+            : Hash_(hash), Iter_(hash->Container_.begin()), EndIter_(hash->Container_.end()), Timestamp_(hash->Timestamp_) {
+        }
+
+        TIteratorImpl(const TCompactHashBase* hash, TContainerIter it)
+            : Hash_(hash), Iter_(it), EndIter_(hash->Container_.equal_range(it->first).second), Timestamp_(hash->Timestamp_) {
+        }
+
+        TIteratorImpl(const TCompactHashBase* hash, TContainerIter it, TContainerIter end_it)
+            : Hash_(hash), Iter_(it), EndIter_(end_it), Timestamp_(hash->Timestamp_) {
+        }
+
+        TIteratorImpl() = default;
+    public:
+        bool Ok() const {
+            if (!Hash_ || Timestamp_ != Hash_->Timestamp_) {
+                return false;
+            }
+
+            return Iter_ != EndIter_;
+        }
+
+        TIteratorImpl& operator++() {
+            return Shift(false);
+        }
+
+        TIteratorImpl& NextKey() {
+            return Shift(true);
+        }
+
+        TItemType Get() const {
+            return GetItem();
+        }
+
+        TKeyType GetKey() const {
+            return GetItem().first;
+        }
+
+        T GetValue() const {
+            return GetItem().second;
+        }
+
+        T operator*() const {
+            return GetValue();
+        }
+
+        void Set(const TItemType& value) {
+            Y_ASSERT(Ok());
+            const_cast<TItemType&>(Iter_->second) = value;
+        }
+
+        TIteratorImpl MakeCurrentKeyIter() const {
+            Y_ASSERT(Ok());
+            auto [start, end] = Hash_->Container_.equal_range(Iter_->first);
+            return TIteratorImpl(Hash_, start, end);
+        }
+    private:
+        TItemType GetItem() const {
+            Y_ASSERT(Ok());
+            return Iter_->second;
+        }
+
+        TIteratorImpl& Shift(bool nextKey) {
+            Y_ASSERT(Ok());
+
+            if (!nextKey) {
+                ++Iter_;
+                return *this;
+            }
+
+            auto [_, last] = Hash_->Container_.equal_range(Iter_->first);
+            Iter_ = last;
+            return *this;
+        }
+
+        const TCompactHashBase* Hash_ = nullptr;
+        TContainerIter Iter_ = TContainerIter();
+        TContainerIter EndIter_ = TContainerIter();
+        ui8 Timestamp_ = 0;
+    };
+
+    using TIterator = TIteratorImpl<TItemType, IsMultiContainer>;
+    using TConstIterator = TIteratorImpl<const TItemType, IsMultiContainer>;
+
+    TCompactHashBase(TAlignedPagePool& /*pagePool*/, size_t size = 0,
+                           const TKeyExtractor& keyExtractor = TKeyExtractor(),
+                           const TKeyHash& keyHash = TKeyHash(),
+                           const TKeyEqual& keyEqual = TKeyEqual())
+        : Container_(size, keyHash, keyEqual)
+        , KeyExtractor_(keyExtractor)
+        , KeyHash_(keyHash)
+        , KeyEqual_(keyEqual)
+        , UniqSize_(0)
+        , Timestamp_(0) {
+    }
+
+    TCompactHashBase(const TCompactHashBase& other)
+        : Container_(other.Container_)
+        , KeyExtractor_(other.KeyExtractor_)
+        , KeyHash_(other.KeyHash_)
+        , KeyEqual_(other.KeyEqual_)
+        , UniqSize_(other.UniqSize_)
+        , Timestamp_(0) {
+    }
+
+    TCompactHashBase(TCompactHashBase&& other)
+        : Container_(std::move(other.Container_))
+        , KeyExtractor_(std::move(other.KeyExtractor_))
+        , KeyHash_(std::move(other.KeyHash_))
+        , KeyEqual_(std::move(other.KeyEqual_))
+        , UniqSize_(other.UniqSize_)
+        , Timestamp_(0) {
+        other.UniqSize_ = 0;
+        other.Timestamp_++;
+    }
+
+    TCompactHashBase& operator=(const TCompactHashBase& other) {
+        TCompactHashBase(other).Swap(*this);
+        return *this;
+    }
+
+    TCompactHashBase& operator=(TCompactHashBase&& other) {
+        TCompactHashBase(std::move(other)).Swap(*this);
+        return *this;
+    }
+
+public:
+    bool Has(const TKeyType& key) const {
+        return Container_.find(key) != Container_.end();
+    }
+
+    bool Empty() const {
+        return Container_.empty();
+    }
+
+    size_t Size() const {
+        return Container_.size();
+    }
+
+    size_t UniqSize() const {
+        return UniqSize_;
+    }
+
+    const TKeyExtractor& GetKeyExtractor() const {
+        return KeyExtractor_;
+    }
+
+    const TKeyHash& GetKeyHash() const {
+        return KeyHash_;
+    }
+
+    const TKeyEqual& GetKeyEqual() const {
+        return KeyEqual_;
+    }
+
+    void Clear() {
+        Container_.clear();
+        UniqSize_ = 0;
+        ++Timestamp_;
+    }
+
+    void Swap(TCompactHashBase& other) {
+        DoSwap(Container_, other.Container_);
+        DoSwap(KeyExtractor_, other.KeyExtractor_);
+        DoSwap(KeyHash_, other.KeyHash_);
+        DoSwap(KeyEqual_, other.KeyEqual_);
+        DoSwap(UniqSize_, other.UniqSize_);
+        ++Timestamp_;
+        ++other.Timestamp_;
+    }
+
+    TIterator Iterate() const {
+        return TIterator(this);
+    }
+
+    TIterator Find(const TKeyType& key) const {
+        auto [start, end] = Container_.equal_range(key);
+        if ((start == Container_.end()) && (end == Container_.end())) {
+            return TIterator();
+        }
+        return TIterator(this, start, end);
+    }
+
+    size_t Count(const TKeyType& key) const {
+        return Container_.count(key);
+    }
+
+    template<typename T>
+    void ClearItem(TKeyValuePair<TKeyType, T>& item) {
+        Container_.erase(item);
+        ++Timestamp_;
+    }
+
+    void SetMaxLoadFactor(float factor) {
+        Y_ABORT_UNLESS(factor > 0);
+        Container_.max_load_factor(factor);
+    }
+
+protected:
+    std::pair<TIterator, bool> InsertOrReplace(const TKeyType& key) {
+        auto [start, end] = Container_.equal_range(key);
+        if (end != Container_.end()) {
+            return {TIterator(this, start, end), false};
+        }
+
+        if (WillRehash()) {
+            ++Timestamp_;
+        }
+
+        auto inserted = Container_.emplace(key, TItemType());
+        ++UniqSize_;
+        return {TIterator(this, inserted), true};
+    }
+
+    TIterator InsertMulti(const TKeyType& key) {
+        auto range = Container_.equal_range(key);
+        if (range.first == range.second) {
+            ++UniqSize_;
+        }
+
+        if (WillRehash()) {
+            ++Timestamp_;
+        }
+
+        auto inserted = Container_.emplace_hint(range.second, key, TItemType());
+        return TIterator(this, inserted);
+    }
+private:
+    bool WillRehash() const {
+        return Container_.size() + 1 > Container_.max_load_factor() * Container_.bucket_count();
+    }
+
+protected:
+    TContainer Container_;
+    TKeyExtractor KeyExtractor_;
+    TKeyHash KeyHash_;
+    TKeyEqual KeyEqual_;
+    size_t UniqSize_;
+    ui8 Timestamp_;
+};
+#endif
 
 template <typename TKey,
           typename TValue,
@@ -1483,6 +1816,7 @@ private:
 
     using TItem = TKeyValuePair<TKey, TValue>;
     using TBase = TCompactHashBase<TItem, TKey, TSelect1st, TKeyHash, TKeyEqual>;
+
 public:
     TCompactHash(TAlignedPagePool& pagePool, size_t size = 0, const TKeyHash& keyHash = TKeyHash(), const TKeyEqual& keyEqual = TKeyEqual())
         : TBase(pagePool, size, TSelect1st(), keyHash, keyEqual)
@@ -1541,7 +1875,11 @@ template <typename TKey,
           typename TValue,
           typename TKeyHash = THash<TKey>,
           typename TKeyEqual = TEqualTo<TKey>>
+#if defined(PROFILE_MEMORY_ALLOCATIONS)
+class TCompactMultiHash: public TCompactHashBase<TKeyValuePair<TKey, TValue>, TKey, TSelect1st, TKeyHash, TKeyEqual, TValue, true> {
+#else
 class TCompactMultiHash: public TCompactHashBase<TKeyNodePair<TKey, TValue>, TKey, TSelect1st, TKeyHash, TKeyEqual, TValue> {
+#endif
 private:
     static_assert(std::is_trivially_destructible<TKey>::value
         && std::is_trivially_copy_assignable<TKey>::value
@@ -1557,10 +1895,16 @@ private:
         , "Expected POD value type");
 
     using TUserItem = std::pair<TKey, TValue>;
+
+#if defined(PROFILE_MEMORY_ALLOCATIONS)
+    using TBase = TCompactHashBase<TKeyValuePair<TKey, TValue>, TKey, TSelect1st, TKeyHash, TKeyEqual, TValue, true>;
+#else
     using TStoreItem = TKeyNodePair<TKey, TValue>;
     using TBase = TCompactHashBase<TStoreItem, TKey, TSelect1st, TKeyHash, TKeyEqual, TValue>;
 
     static_assert(sizeof(TStoreItem) == sizeof(TKey) + sizeof(TNode<TValue>), "Unexpected size");
+#endif
+
 
 public:
     TCompactMultiHash(TAlignedPagePool& pagePool, size_t size = 0, const TKeyHash& keyHash = TKeyHash(), const TKeyEqual& keyEqual = TKeyEqual())
@@ -1586,6 +1930,15 @@ public:
         return *this;
     }
 
+#if defined(PROFILE_MEMORY_ALLOCATIONS)
+    void Insert(const TUserItem& item) {
+        TBase::InsertMulti(item.first).Set(item);
+    }
+
+    void Insert(TKey key, TValue value) {
+        TBase::InsertMulti(key).Set(TUserItem(key, value));
+    }
+#else
     void Insert(const TUserItem& item) {
         GetOrInsert(item.first).Set(item.second);
     }
@@ -1593,8 +1946,9 @@ public:
     void Insert(TKey key, TValue value) {
         GetOrInsert(key).Set(value);
     }
-
+#endif
 protected:
+#if !defined(PROFILE_MEMORY_ALLOCATIONS)
     template <typename TKeyType>
     TListPoolBase::TListIterator<TValue, TListPoolBase::TLargeListHeader> GetOrInsert(TKeyType key) {
         auto res = TBase::InsertOrReplace(key);
@@ -1607,6 +1961,7 @@ protected:
         }
         return valueIter;
     }
+#endif
 };
 
 template <typename TKey,
@@ -1622,6 +1977,7 @@ private:
         , "Expected POD key type");
 
     using TBase = TCompactHashBase<TKey, TKey, TIdentity, TKeyHash, TKeyEqual>;
+
 
 public:
     TCompactHashSet(TAlignedPagePool& pagePool, size_t size = 0, const TKeyHash& keyHash = TKeyHash(), const TKeyEqual& keyEqual = TKeyEqual())
