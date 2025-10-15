@@ -38,6 +38,7 @@ public:
             hFunc(TEvRemovePool, Handle);
             hFunc(TEvAddQuery, Handle);
             hFunc(TEvRemoveQuery, Handle);
+            hFunc(TEvDumpSnapshot, Handle);
 
             hFunc(NActors::TEvents::TEvWakeup, Handle);
 
@@ -131,6 +132,9 @@ public:
         };
 
         auto query = Scheduler->AddOrUpdateQuery(databaseId, poolId.empty() ? NKikimr::NResourcePool::DEFAULT_POOL_ID : poolId, queryId, attrs);
+        if (!query) {
+            Cerr << "Failed to add or update query " << queryId << " to db " << databaseId << " and pool " << poolId << Endl;
+        }
         auto response = MakeHolder<TEvQueryResponse>();
         response->Query = query;
         Send(ev->Sender, response.Release(), 0, queryId);
@@ -143,6 +147,13 @@ public:
     void Handle(NActors::TEvents::TEvWakeup::TPtr&) {
         Scheduler->UpdateFairShare();
         Schedule(UpdateFairSharePeriod, new NActors::TEvents::TEvWakeup());
+    }
+
+    void Handle(TEvDumpSnapshot::TPtr& ev) {
+        Cerr << "Handling DumpSnapshot" << Endl;
+        auto* response = new TEvDumpSnapshotResponse();
+        response->Snapshot = Scheduler->TakeSnapshot();
+        Send(ev->Sender, response);
     }
 
 private:
@@ -264,6 +275,7 @@ void TComputeScheduler::RemoveQuery(const TQueryPtr& query) {
 }
 
 void TComputeScheduler::UpdateFairShare(bool allowFairShareOverlimit) {
+    Y_UNUSED(allowFairShareOverlimit);
     auto startTime = TMonotonic::Now();
 
     NHdrf::NSnapshot::TRootPtr snapshot;
@@ -273,7 +285,7 @@ void TComputeScheduler::UpdateFairShare(bool allowFairShareOverlimit) {
     }
 
     snapshot->UpdateBottomUp(Root->TotalLimit);
-    snapshot->UpdateTopDown(allowFairShareOverlimit);
+    snapshot->UpdateTopDown(true);
 
     {
         TWriteGuard lock(Mutex);
@@ -283,6 +295,11 @@ void TComputeScheduler::UpdateFairShare(bool allowFairShareOverlimit) {
     }
 
     Counters.UpdateFairShare->Add((TMonotonic::Now() - startTime).MicroSeconds());
+}
+
+NHdrf::NSnapshot::TRootPtr TComputeScheduler::TakeSnapshot() {
+    TReadGuard lock(Mutex);
+    return NHdrf::NSnapshot::TRootPtr(Root->TakeSnapshot());
 }
 
 } // namespace NScheduler

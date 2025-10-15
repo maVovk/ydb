@@ -88,6 +88,7 @@ void TTreeElement::UpdateTopDown(bool allowFairShareOverlimit) {
                 return true;
             }
 
+            Cout << "child->Demand " << child->Demand << Endl;
             if (child->Demand > 0) {
                 child->FairShare = 1;
                 if (!allowFairShareOverlimit || leftFairShare > 0) {
@@ -103,6 +104,7 @@ void TTreeElement::UpdateTopDown(bool allowFairShareOverlimit) {
             leftFairShare = leftFairShare <= demand ? 0 : leftFairShare - demand;
 
             if (auto originalQuery = query->Origin.lock()) {
+                Cout << "Setting snapshot for query " << query->GetId() << " " << static_cast<void*>(query->shared_from_this()->GetParent()) << Endl;
                 originalQuery->SetSnapshot(query->shared_from_this());
             }
         });

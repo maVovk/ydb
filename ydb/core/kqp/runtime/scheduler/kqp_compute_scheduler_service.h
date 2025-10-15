@@ -26,6 +26,8 @@ public:
     // If you need to change this behaviour change variable's default value
     void UpdateFairShare(bool allowFairShareOverlimit = true);
 
+    NHdrf::NSnapshot::TRootPtr TakeSnapshot();
+
 private:
     TRWMutex Mutex;
     NHdrf::NDynamic::TRootPtr Root;                                // protected by Mutex
@@ -56,6 +58,8 @@ struct TEvents {
         EvAddQuery,
         EvRemoveQuery,
         EvQueryResponse,
+        EvDumpSnapshot,
+        EvDumpSnapshotResponse,
     };
 };
 
@@ -96,6 +100,13 @@ struct TEvRemoveQuery : public TEventLocal<TEvRemoveQuery, TEvents::EvRemoveQuer
 
 struct TEvQueryResponse : public TEventLocal<TEvQueryResponse, TEvents::EvQueryResponse> {
     NHdrf::NDynamic::TQueryPtr Query;
+};
+
+struct TEvDumpSnapshot : public TEventLocal<TEvDumpSnapshot, TEvents::EvDumpSnapshot> {
+};
+
+struct TEvDumpSnapshotResponse : public TEventLocal<TEvDumpSnapshotResponse, TEvents::EvDumpSnapshotResponse> {
+    NHdrf::NSnapshot::TRootPtr Snapshot;
 };
 
 } // namespace NKikimr::NKqp::NScheduler
